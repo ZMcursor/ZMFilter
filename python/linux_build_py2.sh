@@ -1,0 +1,1 @@
+gcc -std=c99 -Ofast -fPIC -shared -I/usr/include/python2.7/ ../ZMT_tree.c ZMT_tree_py2.c -o ZMT_tree.so -lpython2.7

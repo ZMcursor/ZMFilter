@@ -1,0 +1,1 @@
+gcc -std=c99 -DMS_WIN64 -Ofast -fPIC -shared -IC:\Python27\include -LC:\Python27\libs ..\ZMT_tree.c ZMT_tree_py2.c -o ZMT_tree.pyd -lpython27
