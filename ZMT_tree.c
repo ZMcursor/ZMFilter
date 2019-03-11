@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// bool
-#define True 1
-#define False -1
 //左右子树
 #define RED ((int8)1)
 #define BALCK ((int8)-1)
@@ -240,7 +237,7 @@ int zmSearch(ZMT_tree *tree, uint8 *key) {
           mid = (left + right) >> 1;
           result = memcmp(key, node->list + mid * tree->idLen, tree->idLen);
           if (result == 0)
-            return mid;
+            return True;
           else if (result < 0)
             right = mid - 1;
           else
@@ -255,7 +252,7 @@ int zmSearch(ZMT_tree *tree, uint8 *key) {
 int zmAdd(ZMT_tree *tree, uint8 *key) {
   if (tree->root == NULL) {
     // init root node
-    tree->root = malloc(sizeof(Node));
+    tree->root = malloc(NODE_SIZE);
     tree->root->parent = NULL;
     tree->root->left = NULL;
     tree->root->right = NULL;
@@ -266,7 +263,7 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
     tree->root->color = 0;
     tree->head = tree->root;
     memmove(tree->root->list, key, tree->idLen);
-    tree->nodeSize++;
+    tree->nodeCount++;
     tree->size++;
     return True;
   }
@@ -292,7 +289,7 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
           node->len++;
         } else {
           // split node
-          Node *newNode = malloc(sizeof(Node));
+          Node *newNode = malloc(NODE_SIZE);
           newNode->len = tree->minLen;
           node->len -= newNode->len;
           memmove(newNode->list, node->list + tree->idLen * node->len,
@@ -305,18 +302,8 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
           newNode->next->prev = newNode;
           newNode->prev = node;
           node->next = newNode;
-          tree->nodeSize++;
+          tree->nodeCount++;
           if (node->right == NULL) {
-            // leaf node
-            // if (node->color > 0) {
-            //   newNode->parent = node->parent;
-            //   newNode->left = node;
-            //   newNode->right = NULL;
-            //   newNode->color = RED;
-            //   newNode->parent->left = newNode;
-            //   node->parent = newNode;
-            //   rebalance(tree, newNode);
-            // } else {
             newNode->parent = node;
             newNode->left = NULL;
             newNode->right = NULL;
@@ -324,7 +311,6 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
             newNode->color = BALCK;
             node->right = newNode;
             rebalance(tree, node);
-            // }
           } else {
             newNode->parent = node->parent;
             newNode->left = node;
@@ -368,7 +354,7 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
             node->len++;
           } else {
             // split node
-            Node *newNode = malloc(sizeof(Node));
+            Node *newNode = malloc(NODE_SIZE);
             newNode->len = tree->minLen;
             node->len -= newNode->len;
             memmove(newNode->list, node->list + tree->idLen * node->len,
@@ -380,8 +366,8 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
             newNode->next->prev = newNode;
             newNode->prev = node;
             node->next = newNode;
-            tree->nodeSize++;
-            // if (node->color <= 0 || node->left != NULL) {
+            tree->nodeCount++;
+
             // add to the right
             newNode->parent = node;
             newNode->left = NULL;
@@ -390,15 +376,6 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
             newNode->color = BALCK;
             node->right = newNode;
             if (node->left == NULL) rebalance(tree, node);
-            // } else {
-            //   newNode->parent = node->parent;
-            //   newNode->left = node;
-            //   newNode->right = NULL;
-            //   newNode->color = RED;
-            //   newNode->parent->left = newNode;
-            //   node->parent = newNode;
-            //   rebalance(tree, newNode);
-            // }
           }
           tree->size++;
           return True;
@@ -426,7 +403,7 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
           node->len++;
         } else {
           // split node
-          Node *newNode = malloc(sizeof(Node));
+          Node *newNode = malloc(NODE_SIZE);
           newNode->len = tree->minLen;
           node->len -= newNode->len;
           memmove(newNode->list, node->list + tree->idLen * node->len,
@@ -452,18 +429,9 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
           newNode->next->prev = newNode;
           newNode->prev = node;
           node->next = newNode;
-          tree->nodeSize++;
+          tree->nodeCount++;
           // leaf node
           if (node->high == 0) {
-            // if (node->color > 0) {
-            //   newNode->parent = node->parent;
-            //   newNode->left = node;
-            //   newNode->right = NULL;
-            //   newNode->color = RED;
-            //   newNode->parent->left = newNode;
-            //   node->parent = newNode;
-            //   rebalance(tree, newNode);
-            // } else {
             newNode->parent = node;
             newNode->left = NULL;
             newNode->right = NULL;
@@ -471,7 +439,6 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
             newNode->color = BALCK;
             node->right = newNode;
             rebalance(tree, node);
-            // }
           } else if (node->left == NULL) {
             newNode->parent = node->parent;
             newNode->left = node;
@@ -553,13 +520,15 @@ ZMT_tree *zmNew() {
   tree->root = NULL;
   tree->head = NULL;
   tree->size = 0;
-  tree->nodeSize = 0;
+  tree->nodeCount = 0;
   tree->idLen = 0;
+  tree->nodeSize = 4;
   return tree;
 }
 
-void zmInit(ZMT_tree *tree, uint8 id_len) {
+void zmInit(ZMT_tree *tree, uint8 id_len, uint8 node_size) {
   tree->idLen = id_len;
+  if (node_size) tree->nodeSize = node_size;
   tree->maxLen = LIST_SIZE / id_len;
   tree->minLen = (tree->maxLen + 1) >> 1;
 }
@@ -589,30 +558,28 @@ int zmCheckBalance(ZMT_tree *tree) {
   if (tree->root == NULL) return True;
   int notBalanceNum = 0;
   uint8 high = checkBalance(tree->root, &notBalanceNum);
-  printf("high:%d\n", high);
-  if (notBalanceNum > 0) {
-    printf("notBalanceNum:%d\n", notBalanceNum);
-    return False;
-  }
+  if (notBalanceNum > 0) return False;
   return True;
 }
 
 int zmCheck(ZMT_tree *tree) {
-  if (tree->root == NULL) return True;
-  int errorNum = 0;
+  if (tree->head == NULL) return True;
   Node *node = tree->head;
   uint8 k[tree->idLen];
-  memset(k, 0, tree->idLen);
+  memmove(k, node->list, tree->idLen);
+  uint16 i = 1;
+  uint32 size = 1;
   do {
-    for (uint16 i = 0; i < node->len; i++) {
-      if (memcmp(k, node->list + tree->idLen * i, tree->idLen) >= 0) errorNum++;
+    while (i < node->len) {
+      if (memcmp(k, node->list + tree->idLen * i, tree->idLen) >= 0)
+        return False;
       memmove(k, node->list + tree->idLen * i, tree->idLen);
+      i++;
+      size++;
     }
     node = node->next;
+    i = 0;
   } while (node != tree->head);
-  if (errorNum > 0) {
-    printf("errorNum:%d\n", errorNum);
-    return False;
-  }
+  if (size != tree->size) return False;
   return True;
 }
