@@ -1,7 +1,10 @@
 #include "ZMT_tree.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// bool
+#define True 1
+#define False 0
 
 //左右子树
 #define RED ((int8)1)
@@ -570,6 +573,8 @@ int zmCheck(ZMT_tree *tree) {
   uint16 i = 1;
   uint32 size = 1;
   do {
+    if (!node->high && (node->left != NULL || node->right != NULL))
+      return False;
     while (i < node->len) {
       if (memcmp(k, node->list + tree->idLen * i, tree->idLen) >= 0)
         return False;

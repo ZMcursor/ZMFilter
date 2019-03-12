@@ -1,3 +1,5 @@
+import java.nio.ByteBuffer;
+
 class NullFilterError extends RuntimeException {
 
     public NullFilterError(String msg) {
@@ -30,7 +32,7 @@ public class ZMFilter {
 
     public ZMFilter(int idLen, int nodeSize) {
         if (idLen > 0 && idLen < 256 && nodeSize >= 0 && nodeSize < 256) {
-            // tree = mCreate((short) idLen, (short) nodeSize);
+            tree = mCreate((short) idLen, (short) nodeSize);
         } else
             throw new IllegalValueError("the value of idlen mast in (0,256) and nodeSize mast in [0,256)");
     }
@@ -61,6 +63,12 @@ public class ZMFilter {
         return mNodeSize(tree);
     }
 
+    public long nodeCount() {
+        if (tree == 0)
+            throw new NullFilterError();
+        return mNodeCount(tree);
+    }
+
     public int idLen() {
         if (tree == 0)
             throw new NullFilterError();
@@ -83,7 +91,7 @@ public class ZMFilter {
         if (tree == 0)
             throw new NullFilterError();
         byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
-        int result = mAdd(tree, bs) < 0;
+        int result = mAdd(tree, bs);
         if (result < 0)
             throw new IllegalValueError("key is long then idlen");
         else if (result > 0)
@@ -96,7 +104,7 @@ public class ZMFilter {
         if (tree == 0)
             throw new NullFilterError();
         byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
-        int result = mSearch(tree, bs) < 0;
+        int result = mSearch(tree, bs);
         if (result < 0)
             throw new IllegalValueError("key is long then idlen");
         else if (result > 0)

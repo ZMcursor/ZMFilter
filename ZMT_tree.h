@@ -19,10 +19,6 @@
 #define NODE_SIZE (tree->nodeSize * 1024)
 #define LIST_SIZE (NODE_SIZE - 5 * sizeof(struct Node *) - 4)
 
-// bool
-#define True 1
-#define False 0
-
 typedef struct Node {
   struct Node *parent, *left, *right, *prev, *next;
   uint8 high;
