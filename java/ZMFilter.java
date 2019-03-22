@@ -129,11 +129,14 @@ public class ZMFilter {
      * 
      * @throws IllegalArgumentException key的有效长度大于idLen
      */
-    public synchronized boolean add(long key) {
+    public boolean add(long key) {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
         byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
-        int result = mAdd(tree, bs);
+        int result;
+        synchronized (this) {
+            result = mAdd(tree, bs);
+        }
         if (result < 0)
             throw new IllegalArgumentException("key is longer than idlen");
         else if (result > 0)
@@ -153,11 +156,14 @@ public class ZMFilter {
      * 
      * @throws IllegalArgumentException key的有效长度大于idLen
      */
-    public synchronized boolean search(long key) {
+    public boolean search(long key) {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
         byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
-        int result = mSearch(tree, bs);
+        int result;
+        synchronized (this) {
+            result = mSearch(tree, bs);
+        }
         if (result < 0)
             throw new IllegalArgumentException("key is longer than idlen");
         else if (result > 0)

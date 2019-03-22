@@ -5,10 +5,10 @@ class test {
 
     public static void main(String[] args) throws Throwable {
         ZMFilter tree = new ZMFilter(8);
-        testBalance(tree);
-        // testAdd(tree);
-        // testSearch(tree, 100000000);
-        tree.free();
+        // testBalance(tree);
+        testAdd(tree);
+        testSearch(tree, 100000000);
+        // tree.free();
     }
 
     private static void testAdd(ZMFilter tree) {
