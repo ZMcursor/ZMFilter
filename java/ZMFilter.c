@@ -1,6 +1,6 @@
 #include "../ZMT_tree.h"
 
-#include <stdio.h>
+// #include <stdio.h>
 #include <string.h>
 #include "ZMFilter.h"
 
@@ -41,12 +41,6 @@ JNIEXPORT jlong JNICALL Java_ZMFilter_mNodeCount(JNIEnv *env, jclass cls,
 JNIEXPORT jint JNICALL Java_ZMFilter_mIdLen(JNIEnv *env, jclass cls,
                                             ZMT_tree *tree) {
   return tree->idLen;
-}
-
-JNIEXPORT jboolean JNICALL Java_ZMFilter_mCheckBalance(JNIEnv *env, jclass cls,
-                                                       ZMT_tree *tree) {
-  if (zmCheckBalance(tree)) return JNI_TRUE;
-  return JNI_FALSE;
 }
 
 JNIEXPORT jboolean JNICALL Java_ZMFilter_mCheck(JNIEnv *env, jclass cls,

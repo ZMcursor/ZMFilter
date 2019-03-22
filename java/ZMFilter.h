@@ -57,14 +57,6 @@ JNIEXPORT jint JNICALL Java_ZMFilter_mIdLen
 
 /*
  * Class:     ZMFilter
- * Method:    mCheckBalance
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ZMFilter_mCheckBalance
-  (JNIEnv *, jclass, ZMT_tree *);
-
-/*
- * Class:     ZMFilter
  * Method:    mCheck
  * Signature: (J)Z
  */

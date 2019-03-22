@@ -48,8 +48,6 @@ int zmSearch(ZMT_tree *tree, uint8 *key);
 
 int zmAdd(ZMT_tree *tree, uint8 *key);
 
-int zmCheckBalance(ZMT_tree *tree);
-
 int zmCheck(ZMT_tree *tree);
 
 #endif

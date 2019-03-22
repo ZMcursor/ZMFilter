@@ -6,7 +6,6 @@ typedef struct {
 } ZMT_treeObject;
 
 static PyObject *mNew(PyTypeObject *type, PyObject *args, PyObject *kwds) {
-  // printf("new:\n");
   ZMT_treeObject *self;
   self = (ZMT_treeObject *)type->tp_alloc(type, 0);
   self->tree = zmNew();
@@ -14,12 +13,11 @@ static PyObject *mNew(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 }
 
 static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
-  // printf("init:\n");
-  int id_Len;
-  if (PyArg_ParseTuple(args, "I", &id_Len)) {
-    if (id_Len > 0 && id_Len < 256) {
-      zmInit(self->tree, id_Len);
-      printf("idlen:%d\n", id_Len);
+  int id_Len, nodeSize;
+  if (PyArg_ParseTuple(args, "II", &id_Len, &nodeSize)) {
+    if (id_Len > 0 && id_Len < 256 && nodeSize >= 0 && nodeSize < 256) {
+      zmInit(self->tree, id_Len, nodeSize);
+      // printf("idlen:%d\n", id_Len);
       return 0;
     }
   }
@@ -27,15 +25,20 @@ static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
 }
 
 static void mFree(ZMT_treeObject *self) {
-  zmDeleteTree(self->tree);
-  self->tree = NULL;
-  printf("mFree\n");
+  if (self->tree != NULL) {
+    zmDeleteTree(self->tree);
+    self->tree = NULL;
+  }
+  // printf("mFree\n");
 }
 
 static void mDealloc(ZMT_treeObject *self) {
-  if (self->tree != NULL) zmDeleteTree(self->tree);
+  if (self->tree != NULL) {
+    zmDeleteTree(self->tree);
+    self->tree = NULL;
+  }
   Py_TYPE(self)->tp_free(self);
-  printf("mDealloc\n");
+  // printf("mDealloc\n");
 }
 
 static PyObject *mSize(ZMT_treeObject *self) {
@@ -44,6 +47,10 @@ static PyObject *mSize(ZMT_treeObject *self) {
 
 static PyObject *mNodeSize(ZMT_treeObject *self) {
   return PyLong_FromLong(self->tree->nodeSize);
+}
+
+static PyObject *mNodeCount(ZMT_treeObject *self) {
+  return PyLong_FromLong(self->tree->nodeCount);
 }
 
 static PyObject *mIdLen(ZMT_treeObject *self) {
@@ -88,13 +95,6 @@ static PyObject *mSearch(ZMT_treeObject *self, PyObject *key) {
   Py_RETURN_NONE;
 }
 
-static PyObject *mCheckBalance(ZMT_treeObject *self) {
-  if (zmCheckBalance(self->tree) > 0)
-    Py_RETURN_TRUE;
-  else
-    Py_RETURN_FALSE;
-}
-
 static PyObject *mCheck(ZMT_treeObject *self) {
   if (zmCheck(self->tree) > 0)
     Py_RETURN_TRUE;
@@ -104,10 +104,9 @@ static PyObject *mCheck(ZMT_treeObject *self) {
 
 static PyMethodDef ZMT_tree_methods[] = {
     {"size", (PyCFunction)mSize, METH_NOARGS, "Return item size"},
-    {"nodeSize", (PyCFunction)mNodeSize, METH_NOARGS, "Return num of node"},
+    {"nodeSize", (PyCFunction)mNodeSize, METH_NOARGS, "Return size of node"},
+    {"nodeCount", (PyCFunction)mNodeCount, METH_NOARGS, "Return count of node"},
     {"idLen", (PyCFunction)mIdLen, METH_NOARGS, "Return lenght of item"},
-    {"checkBalance", (PyCFunction)mCheckBalance, METH_NOARGS,
-     "Return lenght of item"},
     {"check", (PyCFunction)mCheck, METH_NOARGS, "Return lenght of item"},
     {"free", (PyCFunction)mFree, METH_NOARGS, "Release memory of tree"},
     {"add", (PyCFunction)mAdd, METH_O, "Return lenght of item"},
@@ -116,7 +115,6 @@ static PyMethodDef ZMT_tree_methods[] = {
 };
 
 static PyTypeObject ZMT_tree_Type = {
-    // PyVarObject_HEAD_INIT(NULL, 0)
     PyVarObject_HEAD_INIT(
         NULL,
         // &PyType_Type,

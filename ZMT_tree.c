@@ -1,4 +1,5 @@
 #include "ZMT_tree.h"
+// #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -64,8 +65,8 @@ static Node *RRBalance(ZMT_tree *tree, Node *node) {
 
 static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
   if (fact > 1) {
+    Node *tNode = node->left;
     if (node->high == 2) {
-      Node *tNode = node->left;
       if (tNode->left != NULL) {
         tNode->parent = node->parent;
         tNode->color = node->color;
@@ -101,18 +102,19 @@ static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
         node->left = NULL;
         node->high = 0;
         node->parent = pNode;
-        pNode->right = node;
         node->color = BALCK;
+        pNode->right = node;
 
         tNode->right = NULL;
         tNode->high = 0;
         tNode->parent = pNode;
         pNode->left = tNode;
 
+        pNode->high = 1;
+
         return pNode;
       }
     }
-    Node *tNode = node->left;
     fact = tNode->left->high - tNode->right->high;
     if (fact < 0) {
       Node *pNode = tNode->right, *qNode = pNode->left;
@@ -134,8 +136,8 @@ static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
     }
     return LLBalance(tree, node);
   } else if (fact < -1) {
+    Node *tNode = node->right;
     if (node->high == 2) {
-      Node *tNode = node->right;
       if (tNode->right != NULL) {
         tNode->parent = node->parent;
         tNode->color = node->color;
@@ -179,10 +181,11 @@ static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
         tNode->parent = pNode;
         pNode->right = tNode;
 
+        pNode->high = 1;
+
         return pNode;
       }
     }
-    Node *tNode = node->right;
     fact = tNode->left->high - tNode->right->high;
     if (fact > 0) {
       Node *pNode = tNode->left, *qNode = pNode->right;
@@ -246,6 +249,7 @@ int zmSearch(ZMT_tree *tree, uint8 *key) {
           else
             left = mid + 1;
         }
+        return False;
       }
     }
   }
@@ -548,19 +552,28 @@ void zmDeleteTree(ZMT_tree *tree) {
   free(tree);
 }
 
-static uint8 checkBalance(Node *node, int *notBalanceNum) {
+static uint8 checkBalance(Node *node, int *notBalanceNum, uint32 *nodeCount) {
   uint8 l = 0, r = 0;
-  if (node->left != NULL) l = checkBalance(node->left, notBalanceNum) + 1;
-  if (node->right != NULL) r = checkBalance(node->right, notBalanceNum) + 1;
+  if (node->left != NULL)
+    l = checkBalance(node->left, notBalanceNum, nodeCount) + 1;
+  if (node->right != NULL)
+    r = checkBalance(node->right, notBalanceNum, nodeCount) + 1;
   int8 f = l - r;
   if (f > 1 || f < -1) (*notBalanceNum)++;
-  return l > r ? l : r;
+  int high = l > r ? l : r;
+  if (high != node->high) printf("b node high error\n");
+  (*nodeCount)++;
+  return high;
 }
 
-int zmCheckBalance(ZMT_tree *tree) {
-  if (tree->root == NULL) return True;
+static int zmCheckBalance(ZMT_tree *tree) {
   int notBalanceNum = 0;
-  uint8 high = checkBalance(tree->root, &notBalanceNum);
+  uint32 nodeCount = 0;
+  uint8 high = checkBalance(tree->root, &notBalanceNum, &nodeCount);
+  if (nodeCount != tree->nodeCount) {
+    printf("nodeCount error\n");
+    return False;
+  }
   if (notBalanceNum > 0) return False;
   return True;
 }
@@ -571,20 +584,33 @@ int zmCheck(ZMT_tree *tree) {
   uint8 k[tree->idLen];
   memmove(k, node->list, tree->idLen);
   uint16 i = 1;
-  uint32 size = 1;
+  uint32 size = 1, nodeCount = 0;
   do {
-    if (!node->high && (node->left != NULL || node->right != NULL))
+    if (!node->high && (node->left != NULL || node->right != NULL)) {
+      // printf("c node high error:%lld,%d,%lld,%lld\n", node, node->high,
+      //        node->left, node->right != NULL);
       return False;
+    }
     while (i < node->len) {
-      if (memcmp(k, node->list + tree->idLen * i, tree->idLen) >= 0)
+      if (memcmp(k, node->list + tree->idLen * i, tree->idLen) >= 0) {
+        // printf("node order error\n");
         return False;
+      }
       memmove(k, node->list + tree->idLen * i, tree->idLen);
       i++;
       size++;
     }
     node = node->next;
     i = 0;
+    nodeCount++;
   } while (node != tree->head);
-  if (size != tree->size) return False;
-  return True;
+  if (size != tree->size) {
+    // printf("tree size error\n");
+    return False;
+  }
+  if (nodeCount != tree->nodeCount) {
+    // printf("tree nodeCount error\n");
+    return False;
+  }
+  return zmCheckBalance(tree);
 }
