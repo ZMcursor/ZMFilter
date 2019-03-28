@@ -25,34 +25,10 @@ JNIEXPORT void JNICALL Java_ZMFilter_mFree
 
 /*
  * Class:     ZMFilter
- * Method:    mSize
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ZMFilter_mSize
-  (JNIEnv *, jclass, ZMT_tree *);
-
-/*
- * Class:     ZMFilter
- * Method:    mNodeSize
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_ZMFilter_mNodeSize
-  (JNIEnv *, jclass, ZMT_tree *);
-
-/*
- * Class:     ZMFilter
  * Method:    mNodeCount
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_ZMFilter_mNodeCount
-  (JNIEnv *, jclass, ZMT_tree *);
-
-/*
- * Class:     ZMFilter
- * Method:    mIdLen
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_ZMFilter_mIdLen
   (JNIEnv *, jclass, ZMT_tree *);
 
 /*

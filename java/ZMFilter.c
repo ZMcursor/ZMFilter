@@ -6,10 +6,10 @@
 
 #define ERROR -1
 
-static void memrev(uint8 *key, uint8 len) {
-  int8 i = -1;
-  while (++i < --len) key[i] ^= key[len] ^= key[i] ^= key[len];
-}
+// static void memrev(uint8 *key, uint8 len) {
+//   int8 i = -1;
+//   while (++i < --len) key[i] ^= key[len] ^= key[i] ^= key[len];
+// }
 
 JNIEXPORT jlong JNICALL Java_ZMFilter_mCreate(JNIEnv *env, jclass cls, jshort i,
                                               jshort j) {
@@ -23,24 +23,9 @@ JNIEXPORT void JNICALL Java_ZMFilter_mFree(JNIEnv *env, jclass cls,
   zmDeleteTree(tree);
 }
 
-JNIEXPORT jlong JNICALL Java_ZMFilter_mSize(JNIEnv *env, jclass cls,
-                                            ZMT_tree *tree) {
-  return tree->size;
-}
-
-JNIEXPORT jint JNICALL Java_ZMFilter_mNodeSize(JNIEnv *env, jclass cls,
-                                               ZMT_tree *tree) {
-  return tree->nodeSize;
-}
-
 JNIEXPORT jlong JNICALL Java_ZMFilter_mNodeCount(JNIEnv *env, jclass cls,
                                                  ZMT_tree *tree) {
   return tree->nodeCount;
-}
-
-JNIEXPORT jint JNICALL Java_ZMFilter_mIdLen(JNIEnv *env, jclass cls,
-                                            ZMT_tree *tree) {
-  return tree->idLen;
 }
 
 JNIEXPORT jboolean JNICALL Java_ZMFilter_mCheck(JNIEnv *env, jclass cls,

@@ -13,6 +13,18 @@ public class ZMFilter {
      * 保存Native代码中T-tree实例的指针
      */
     private volatile long tree = 0;
+    /**
+     * 已经保存的数据数量
+     */
+    private volatile long size = 0;
+    /**
+     * id占用的长度，以byte为单位
+     */
+    private final short idLen;
+    /**
+     * T-tree中一个Node的大小，以KB为单位。
+     */
+    private final short nodeSize;
 
     /**
      * 新建一个滤重实例
@@ -38,7 +50,9 @@ public class ZMFilter {
      */
     public ZMFilter(int idLen, int nodeSize) {
         if (idLen > 0 && idLen < 256 && nodeSize >= 0 && nodeSize < 256) {
-            tree = mCreate((short) idLen, (short) nodeSize);
+            this.idLen = (short) idLen;
+            this.nodeSize = nodeSize == 0 ? 4 : (short) nodeSize;
+            tree = mCreate(this.idLen, this.nodeSize);
         } else
             throw new IllegalArgumentException("the value of idlen most in (0,256) and nodeSize most in [0,256)");
     }
@@ -50,6 +64,7 @@ public class ZMFilter {
         if (tree != 0) {
             long temp = tree;
             tree = 0;
+            size = 0;
             mFree(temp);
         }
     }
@@ -71,18 +86,18 @@ public class ZMFilter {
     public long size() {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
-        return mSize(tree);
+        return size;
     }
 
     /**
-     * 获取T-tree的节点大小
+     * 获取T-tree的节点大小，以KB为单位。
      * 
      * @throws NullPointerException 滤重已经被释放
      */
     public int nodeSize() {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
-        return mNodeSize(tree);
+        return nodeSize;
     }
 
     /**
@@ -104,7 +119,7 @@ public class ZMFilter {
     public int idLen() {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
-        return mIdLen(tree);
+        return idLen;
     }
 
     /**
@@ -136,6 +151,8 @@ public class ZMFilter {
         int result;
         synchronized (this) {
             result = mAdd(tree, bs);
+            if (result > 0)
+                size++;
         }
         if (result < 0)
             throw new IllegalArgumentException("key is longer than idlen");
@@ -176,13 +193,7 @@ public class ZMFilter {
 
     private static native void mFree(long tree);
 
-    private static native long mSize(long tree);
-
-    private static native int mNodeSize(long tree);
-
     private static native long mNodeCount(long tree);
-
-    private static native int mIdLen(long tree);
 
     private static native boolean mCheck(long tree);
 
