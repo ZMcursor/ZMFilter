@@ -18,9 +18,9 @@ public class ZMFilter {
      */
     private volatile long size = 0;
     /**
-     * id占用的长度，以byte为单位
+     * key占用的长度，以byte为单位
      */
-    private final short idLen;
+    private final short keyLen;
     /**
      * T-tree中一个Node的大小，以KB为单位。
      */
@@ -29,18 +29,18 @@ public class ZMFilter {
     /**
      * 新建一个滤重实例
      * 
-     * @param idLen id占用的长度，以byte为单位 注意，idLen必须处于(0,256)区间内
+     * @param keyLen key占用的长度，以byte为单位 注意，keyLen必须处于(0,256)区间内
      * 
      * @throws IllegalArgumentException 如果参数不在规定区间内
      */
-    public ZMFilter(int idLen) {
-        this(idLen, 0);
+    public ZMFilter(int keyLen) {
+        this(keyLen, 0);
     }
 
     /**
      * 新建一个滤重实例
      * 
-     * @param idLen    id占用的长度，以byte为单位 注意，idLen必须处于(0,256)区间内
+     * @param keyLen   key占用的长度，以byte为单位 注意，keyLen必须处于(0,256)区间内
      * 
      * @param nodeSize T-tree中一个Node的大小，默认值为4，以KB为单位。
      *                 注意，nodeSize必须处于(0,256)区间内，0代表采用默认值即4。
@@ -48,13 +48,13 @@ public class ZMFilter {
      * 
      * @throws IllegalArgumentException 如果参数不在规定区间内
      */
-    public ZMFilter(int idLen, int nodeSize) {
-        if (idLen > 0 && idLen < 256 && nodeSize >= 0 && nodeSize < 256) {
-            this.idLen = (short) idLen;
+    public ZMFilter(int keyLen, int nodeSize) {
+        if (keyLen > 0 && keyLen < 256 && nodeSize >= 0 && nodeSize < 256) {
+            this.keyLen = (short) keyLen;
             this.nodeSize = nodeSize == 0 ? 4 : (short) nodeSize;
-            tree = mCreate(this.idLen, this.nodeSize);
+            tree = mCreate(this.keyLen, this.nodeSize);
         } else
-            throw new IllegalArgumentException("the value of idlen most in (0,256) and nodeSize most in [0,256)");
+            throw new IllegalArgumentException("the value of keyLen most in (0,256) and nodeSize most in [0,256)");
     }
 
     /**
@@ -79,7 +79,7 @@ public class ZMFilter {
     }
 
     /**
-     * 获取保存的id的数量
+     * 获取保存的key的数量
      * 
      * @throws NullPointerException 滤重已经被释放
      */
@@ -112,14 +112,14 @@ public class ZMFilter {
     }
 
     /**
-     * 获取T-tree的id大小
+     * 获取T-tree的key长度
      * 
      * @throws NullPointerException 滤重已经被释放
      */
-    public int idLen() {
+    public int keyLen() {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
-        return idLen;
+        return keyLen;
     }
 
     /**
@@ -134,62 +134,80 @@ public class ZMFilter {
     }
 
     /**
-     * 添加一个id
+     * 添加一个key
      * 
-     * @param key 添加的id
+     * @param key 添加的key
+     * 
+     * @see #add(byte[])
+     */
+    public boolean add(long key) {
+        byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
+        return add(bs);
+    }
+
+    /**
+     * 添加一个key
+     * 
+     * @param key 添加的key
      * 
      * @return true 添加成功，false key已存在
      * 
      * @throws NullPointerException     滤重已经被释放
      * 
-     * @throws IllegalArgumentException key的有效长度大于idLen
+     * @throws IllegalArgumentException key的有效长度大于keyLen
      */
-    public boolean add(long key) {
+    public boolean add(byte[] key) {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
-        byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
         int result;
         synchronized (this) {
-            result = mAdd(tree, bs);
+            result = mAdd(tree, key);
             if (result > 0)
                 size++;
         }
         if (result < 0)
-            throw new IllegalArgumentException("key is longer than idlen");
-        else if (result > 0)
-            return true;
+            throw new IllegalArgumentException("key is longer than keyLen");
         else
-            return false;
+            return result > 0;
     }
 
     /**
-     * 搜索一个id
+     * 搜索一个key
      * 
-     * @param key 搜索的id
+     * @param key 搜索的key
+     * 
+     * @see #search(byte[])
+     */
+    public boolean search(long key) {
+        byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
+        return search(bs);
+    }
+
+    /**
+     * 搜索一个key
+     * 
+     * @param key 搜索的key
      * 
      * @return true key存在，false key不存在
      * 
      * @throws NullPointerException     滤重已经被释放
      * 
-     * @throws IllegalArgumentException key的有效长度大于idLen
+     * @throws IllegalArgumentException key的有效长度大于keyLen
      */
-    public boolean search(long key) {
+    public boolean search(byte[] key) {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
-        byte[] bs = ByteBuffer.allocate(8).putLong(key).array();
         int result;
         synchronized (this) {
-            result = mSearch(tree, bs);
+            result = mSearch(tree, key);
         }
         if (result < 0)
-            throw new IllegalArgumentException("key is longer than idlen");
-        else if (result > 0)
-            return true;
+            throw new IllegalArgumentException("key is longer than keyLen");
         else
-            return false;
+            return result > 0;
     }
 
-    private static native long mCreate(short idLen, short nodeSize);
+    private static native long mCreate(short keyLen, short nodeSize);
 
     private static native void mFree(long tree);
 

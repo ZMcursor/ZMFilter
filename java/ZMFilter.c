@@ -4,8 +4,6 @@
 #include <string.h>
 #include "ZMFilter.h"
 
-#define ERROR -1
-
 // static void memrev(uint8 *key, uint8 len) {
 //   int8 i = -1;
 //   while (++i < --len) key[i] ^= key[len] ^= key[i] ^= key[len];

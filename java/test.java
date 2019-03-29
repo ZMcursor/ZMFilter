@@ -5,12 +5,12 @@ import java.util.concurrent.CountDownLatch;
 class test {
 
     public static void main(String[] args) throws Throwable {
-        // test(100000000);
-        testMultiThread(100000002, 3);
+        test(10000000);
+        // testMultiThread(100000002, 3);
         // testBalance();
     }
 
-    private static void testMultiThread(int num, int threadCount) throws Throwable {
+    public static void testMultiThread(int num, int threadCount) throws Throwable {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("adding");
         final CountDownLatch countAdd = new CountDownLatch(threadCount);
@@ -52,7 +52,7 @@ class test {
         tree.free();
     }
 
-    private static void test(int num) {
+    public static void test(int num) {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("adding");
         long t = System.currentTimeMillis();
@@ -70,21 +70,7 @@ class test {
         tree.free();
     }
 
-    private static void add(ZMFilter tree, int num) {
-        Random random = new Random(System.nanoTime());
-        for (int i = 0; i < num; i++) {
-            tree.add(random.nextLong());
-        }
-    }
-
-    private static void search(ZMFilter tree, int num) {
-        Random random = new Random(System.nanoTime());
-        for (int i = 0; i < num; i++) {
-            tree.search(random.nextLong());
-        }
-    }
-
-    private static void testBalance() {
+    public static void testBalance() {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("testing balance");
         Random random = new Random(System.currentTimeMillis());
@@ -99,4 +85,17 @@ class test {
         tree.free();
     }
 
+    private static void add(ZMFilter tree, int num) {
+        Random random = new Random(System.nanoTime());
+        for (int i = 0; i < num; i++) {
+            tree.add(random.nextLong());
+        }
+    }
+
+    private static void search(ZMFilter tree, int num) {
+        Random random = new Random(System.nanoTime());
+        for (int i = 0; i < num; i++) {
+            tree.search(random.nextLong());
+        }
+    }
 }

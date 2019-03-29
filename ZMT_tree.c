@@ -1,5 +1,5 @@
 #include "ZMT_tree.h"
-// #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,6 +10,30 @@
 //左右子树
 #define RED ((int8)1)
 #define BALCK ((int8)-1)
+
+#define TREE_OFFSET (2 * sizeof(struct Node *) + 8)
+#define NODE_OFFSET (5 * sizeof(struct Node *) + 4)
+
+static int dumpTree(ZMT_tree *tree, FILE *fp) {
+  uint8 *data = ((uint8 *)tree) + TREE_OFFSET;
+  if (!fwrite(data, sizeof(ZMT_tree) - TREE_OFFSET, 1, fp)) {
+    return ERROR;
+  }
+  Node *node = tree->head;
+  do {
+    data = ((uint8 *)node) + NODE_OFFSET;
+    // data += NODE_OFFSET;
+    // if (!fwrite(data, 2, 1, fp)) {
+    //   return ERROR;
+    // }
+    // data += 2;
+    if (!fwrite(data, tree->idLen, node->len, fp)) {
+      return ERROR;
+    }
+    node = node->next;
+  } while (node != tree->head);
+  return True;
+}
 
 static Node *LLBalance(ZMT_tree *tree, Node *node) {
   Node *tNode = node->left, *pNode = tNode->right;
@@ -528,6 +552,7 @@ ZMT_tree *zmNew() {
   tree->head = NULL;
   tree->size = 0;
   tree->nodeCount = 0;
+  tree->version = VERSION;
   tree->idLen = 0;
   tree->nodeSize = 4;
   return tree;
@@ -561,7 +586,7 @@ static uint8 checkBalance(Node *node, int *notBalanceNum, uint32 *nodeCount) {
   int8 f = l - r;
   if (f > 1 || f < -1) (*notBalanceNum)++;
   int high = l > r ? l : r;
-  if (high != node->high) printf("b node high error\n");
+  // if (high != node->high) printf("b node high error\n");
   (*nodeCount)++;
   return high;
 }
@@ -571,7 +596,7 @@ static int zmCheckBalance(ZMT_tree *tree) {
   uint32 nodeCount = 0;
   uint8 high = checkBalance(tree->root, &notBalanceNum, &nodeCount);
   if (nodeCount != tree->nodeCount) {
-    printf("nodeCount error\n");
+    // printf("nodeCount error\n");
     return False;
   }
   if (notBalanceNum > 0) return False;

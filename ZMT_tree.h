@@ -12,8 +12,10 @@
 //?
 #define uint64 unsigned long long
 
+#define ERROR -1
+
 //控制版本
-#define VERSION 0
+#define VERSION ((uint16)0)
 
 //控制大小长度
 #define NODE_SIZE (tree->nodeSize * 1024)
@@ -24,18 +26,19 @@ typedef struct Node {
   uint8 high;
   int8 color;
   uint16 len;
-  uint8 list[1];
+  uint8 list[4];
 } Node;
 
 typedef struct {
   Node *root;
   Node *head;
-  uint32 size;
   uint32 nodeCount;
-  uint8 idLen;
-  uint8 nodeSize;
   uint16 maxLen;
   uint16 minLen;
+  uint32 size;
+  uint16 version;
+  uint8 nodeSize;
+  uint8 idLen;
 } ZMT_tree;
 
 ZMT_tree *zmNew();
