@@ -53,4 +53,8 @@ int zmAdd(ZMT_tree *tree, uint8 *key);
 
 int zmCheck(ZMT_tree *tree);
 
+int zmDumpTree(ZMT_tree *tree, FILE *fp);
+
+int zmLoadTree(ZMT_tree *tree, FILE *fp);
+
 #endif

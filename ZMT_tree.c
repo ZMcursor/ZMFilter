@@ -1,7 +1,8 @@
-#include "ZMT_tree.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "ZMT_tree.h"
 
 // bool
 #define True 1
@@ -14,24 +15,201 @@
 #define TREE_OFFSET (2 * sizeof(struct Node *) + 8)
 #define NODE_OFFSET (5 * sizeof(struct Node *) + 4)
 
-static int dumpTree(ZMT_tree *tree, FILE *fp) {
+#define LOW_LOAD_FACTER ((float)(0.6))
+#define LOAD_FACTER ((float)(0.75))
+#define OVER_LOAD_FACTER ((float)(0.9))
+
+int zmDumpTree(ZMT_tree *tree, FILE *fp) {
   uint8 *data = ((uint8 *)tree) + TREE_OFFSET;
   if (!fwrite(data, sizeof(ZMT_tree) - TREE_OFFSET, 1, fp)) {
     return ERROR;
   }
+  if (tree->head != NULL) {
+    Node *node = tree->head;
+    do {
+      data = ((uint8 *)node) + NODE_OFFSET;
+      if (!fwrite(data, tree->idLen, node->len, fp)) {
+        return ERROR;
+      }
+      node = node->next;
+    } while (node != tree->head);
+  }
+  return True;
+}
+
+static Node *buildTree(Node *head, uint32 nodeCount) {
+  Node *node;
+  switch (nodeCount) {
+    case 1:
+      node = head;
+      node->left = NULL;
+      node->right = NULL;
+      node->high = 0;
+      break;
+    case 2:
+      node = head->next;
+      head->left = NULL;
+      head->right = NULL;
+      head->high = 0;
+      head->parent = node;
+      head->color = RED;
+      node->left = head;
+
+      node->right = NULL;
+
+      node->high = 1;
+      break;
+    case 3:
+      node = head->next;
+      head->left = NULL;
+      head->right = NULL;
+      head->high = 0;
+      head->parent = node;
+      head->color = RED;
+      node->left = head;
+
+      head = node->next;
+      head->left = NULL;
+      head->right = NULL;
+      head->high = 0;
+      head->parent = node;
+      head->color = BALCK;
+      node->right = head;
+
+      node->high = 1;
+      break;
+    case 4:
+      node = head->next->next;
+      node->left = buildTree(head, 2);
+      node->left->parent = node;
+      node->left->color = RED;
+
+      head = node->next;
+      head->left = NULL;
+      head->right = NULL;
+      head->high = 0;
+      head->parent = node;
+      head->color = BALCK;
+      node->right = head;
+
+      node->high = 2;
+      break;
+
+    default:
+      node = head;
+      uint32 mid = nodeCount >> 1;
+      uint32 temp = mid;
+      while (temp--) node = node->next;
+      node->left = buildTree(head, mid);
+      node->left->parent = node;
+      node->left->color = RED;
+      node->right = buildTree(node->next, nodeCount - mid - 1);
+      node->right->parent = node;
+      node->right->color = BALCK;
+      node->high = node->left->high > node->right->high ? node->left->high + 1
+                                                        : node->right->high + 1;
+      break;
+  }
+  // if (mid) {
+  //   uint32 temp = mid;
+  //   while (temp--) node = node->next;
+  //   node->left = buildTree(head, mid);
+  //   node->left->parent = node;
+  //   node->left->color = RED;
+  //   if (nodeCount == 2) {
+  //     node->right = NULL;
+  //     node->high = 1;
+  //   } else {
+  //     node->right = buildTree(node->next, nodeCount - mid - 1);
+  //     node->right->parent = node;
+  //     node->right->color = BALCK;
+  //     node->high = node->left->high > node->right->high ? node->left->high +
+  //     1
+  //                                                       : node->right->high +
+  //                                                       1;
+  //   }
+  // } else {
+  //   node->left = NULL;
+  //   node->right = NULL;
+  //   node->high = 0;
+  // }
+  return node;
+}
+
+int zmLoadTree(ZMT_tree *tree, FILE *fp) {
+  uint8 *data = ((uint8 *)tree) + TREE_OFFSET;
+  if (!fread(data, sizeof(ZMT_tree) - TREE_OFFSET, 1, fp)) {
+    return ERROR;
+  }
+  if (tree->version != VERSION) return ERROR;
+  tree->maxLen = LIST_SIZE / tree->idLen;
+  tree->minLen = (tree->maxLen + 1) >> 1;
+  if (!tree->size) return True;
+
+  uint32 nodeCount = tree->size / ((uint32)(tree->maxLen * LOAD_FACTER));
+  uint16 len;
+  if (nodeCount) {
+    if (tree->size >= nodeCount * ((uint32)(tree->maxLen * OVER_LOAD_FACTER))) {
+      nodeCount++;
+      if (tree->size <=
+          nodeCount * ((uint32)(tree->maxLen * LOW_LOAD_FACTER + 0.5))) {
+        nodeCount--;
+        if (tree->size > nodeCount * tree->maxLen) {
+          nodeCount++;
+        }
+      }
+    }
+    tree->nodeCount = nodeCount;
+    len = tree->size / tree->nodeCount;
+    nodeCount -= tree->size % tree->nodeCount;
+  } else {
+    nodeCount = 1;
+    tree->nodeCount = nodeCount;
+    len = tree->size;
+  }
+
+  tree->head = malloc(NODE_SIZE);
+  tree->head->prev = tree->head;
+  tree->head->next = tree->head;
   Node *node = tree->head;
-  do {
-    data = ((uint8 *)node) + NODE_OFFSET;
-    // data += NODE_OFFSET;
-    // if (!fwrite(data, 2, 1, fp)) {
-    //   return ERROR;
-    // }
-    // data += 2;
-    if (!fwrite(data, tree->idLen, node->len, fp)) {
+  node->len = len;
+  data = ((uint8 *)node) + NODE_OFFSET;
+  if (!fread(data, tree->idLen, node->len, fp)) {
+    return ERROR;
+  }
+  Node *newNode;
+  uint32 i;
+  for (i = 1; i < nodeCount; i++) {
+    newNode = malloc(NODE_SIZE);
+    newNode->next = node->next;
+    newNode->next->prev = newNode;
+    newNode->prev = node;
+    node->next = newNode;
+    node = newNode;
+    newNode->len = len;
+    data = ((uint8 *)newNode) + NODE_OFFSET;
+    if (!fread(data, tree->idLen, newNode->len, fp)) {
       return ERROR;
     }
-    node = node->next;
-  } while (node != tree->head);
+  }
+  len++;
+  for (; i < tree->nodeCount; i++) {
+    newNode = malloc(NODE_SIZE);
+    newNode->next = node->next;
+    newNode->next->prev = newNode;
+    newNode->prev = node;
+    node->next = newNode;
+    node = newNode;
+    newNode->len = len;
+    data = ((uint8 *)newNode) + NODE_OFFSET;
+    if (!fread(data, tree->idLen, newNode->len, fp)) {
+      return ERROR;
+    }
+  }
+  if (fread(&i, 1, 1, fp) || !feof(fp)) return ERROR;
+  tree->root = buildTree(tree->head, tree->nodeCount);
+  tree->root->parent = NULL;
+  tree->root->color = 0;
   return True;
 }
 
@@ -577,31 +755,20 @@ void zmDeleteTree(ZMT_tree *tree) {
   free(tree);
 }
 
-static uint8 checkBalance(Node *node, int *notBalanceNum, uint32 *nodeCount) {
-  uint8 l = 0, r = 0;
-  if (node->left != NULL)
-    l = checkBalance(node->left, notBalanceNum, nodeCount) + 1;
-  if (node->right != NULL)
-    r = checkBalance(node->right, notBalanceNum, nodeCount) + 1;
-  int8 f = l - r;
-  if (f > 1 || f < -1) (*notBalanceNum)++;
-  int high = l > r ? l : r;
-  // if (high != node->high) printf("b node high error\n");
-  (*nodeCount)++;
-  return high;
-}
-
-static int zmCheckBalance(ZMT_tree *tree) {
-  int notBalanceNum = 0;
-  uint32 nodeCount = 0;
-  uint8 high = checkBalance(tree->root, &notBalanceNum, &nodeCount);
-  if (nodeCount != tree->nodeCount) {
-    // printf("nodeCount error\n");
-    return False;
-  }
-  if (notBalanceNum > 0) return False;
-  return True;
-}
+// static uint8 checkBalance(Node *node, int *notBalanceNum, uint32 *nodeCount)
+// {
+//   uint8 l = 0, r = 0;
+//   if (node->left != NULL)
+//     l = checkBalance(node->left, notBalanceNum, nodeCount) + 1;
+//   if (node->right != NULL)
+//     r = checkBalance(node->right, notBalanceNum, nodeCount) + 1;
+//   int8 f = l - r;
+//   if (f > 1 || f < -1) (*notBalanceNum)++;
+//   int high = l > r ? l : r;
+//   // if (high != node->high) printf("b node high error\n");
+//   (*nodeCount)++;
+//   return high;
+// }
 
 int zmCheck(ZMT_tree *tree) {
   if (tree->head == NULL) return True;
@@ -610,15 +777,26 @@ int zmCheck(ZMT_tree *tree) {
   memmove(k, node->list, tree->idLen);
   uint16 i = 1;
   uint32 size = 1, nodeCount = 0;
+  uint8 leftHigh, rightHigh;
+  int8 fact;
   do {
-    if (!node->high && (node->left != NULL || node->right != NULL)) {
-      // printf("c node high error:%lld,%d,%lld,%lld\n", node, node->high,
-      //        node->left, node->right != NULL);
+    leftHigh = 0;
+    rightHigh = 0;
+    if (node->left != NULL) leftHigh = node->left->high + 1;
+    if (node->right != NULL) rightHigh = node->right->high + 1;
+    if (node->high != (leftHigh > rightHigh ? leftHigh : rightHigh)) {
+      // printf("tree high error:%d,%d,%d\n", node->high, leftHigh, rightHigh);
       return False;
     }
+    fact = leftHigh - rightHigh;
+    if (fact > 1 || fact < -1) {
+      // printf("tree balance error:%d,%d\n", leftHigh, rightHigh);
+      return False;
+    }
+
     while (i < node->len) {
       if (memcmp(k, node->list + tree->idLen * i, tree->idLen) >= 0) {
-        // printf("node order error\n");
+        // printf("node order error:%d,%d,%d\n", size, nodeCount, i);
         return False;
       }
       memmove(k, node->list + tree->idLen * i, tree->idLen);
@@ -630,12 +808,12 @@ int zmCheck(ZMT_tree *tree) {
     nodeCount++;
   } while (node != tree->head);
   if (size != tree->size) {
-    // printf("tree size error\n");
+    // printf("tree size error:%d,%d\n", size, tree->size);
     return False;
   }
   if (nodeCount != tree->nodeCount) {
-    // printf("tree nodeCount error\n");
+    // printf("tree nodeCount error%d,%d\n", nodeCount, tree->nodeCount);
     return False;
   }
-  return zmCheckBalance(tree);
+  return True;
 }

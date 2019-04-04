@@ -4,11 +4,6 @@
 #include <string.h>
 #include "ZMFilter.h"
 
-// static void memrev(uint8 *key, uint8 len) {
-//   int8 i = -1;
-//   while (++i < --len) key[i] ^= key[len] ^= key[i] ^= key[len];
-// }
-
 JNIEXPORT jlong JNICALL Java_ZMFilter_mCreate(JNIEnv *env, jclass cls, jshort i,
                                               jshort j) {
   ZMT_tree *tree = zmNew();
