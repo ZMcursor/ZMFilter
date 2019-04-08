@@ -1,6 +1,8 @@
 #ifndef _ZM_T_TREE_H_
 #define _ZM_T_TREE_H_
 
+#include <stdio.h>
+
 //-128<-->127
 #define int8 signed char
 // 0<-->255
@@ -12,10 +14,14 @@
 //?
 #define uint64 unsigned long long
 
+// error
 #define ERROR -1
+// bool
+#define True 1
+#define False 0
 
 //控制版本
-#define VERSION ((uint16)0)
+#define VERSION 0
 
 //控制大小长度
 #define NODE_SIZE (tree->nodeSize * 1024)
@@ -41,9 +47,7 @@ typedef struct {
   uint8 idLen;
 } ZMT_tree;
 
-ZMT_tree *zmNew();
-
-void zmInit(ZMT_tree *tree, uint8 id_len, uint8 node_size);
+ZMT_tree *zmNewTree(uint8 id_len, uint8 node_size);
 
 void zmDeleteTree(ZMT_tree *tree);
 
@@ -55,6 +59,6 @@ int zmCheck(ZMT_tree *tree);
 
 int zmDumpTree(ZMT_tree *tree, FILE *fp);
 
-int zmLoadTree(ZMT_tree *tree, FILE *fp);
+ZMT_tree *zmLoadTree(FILE *fp);
 
 #endif

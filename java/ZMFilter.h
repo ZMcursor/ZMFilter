@@ -55,6 +55,54 @@ JNIEXPORT jint JNICALL Java_ZMFilter_mAdd
 JNIEXPORT jint JNICALL Java_ZMFilter_mSearch
   (JNIEnv *, jclass, ZMT_tree *, jbyteArray);
 
+/*
+ * Class:     ZMFilter
+ * Method:    mDump
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ZMFilter_mDump
+  (JNIEnv *, jclass, ZMT_tree *, jstring);
+
+/*
+ * Class:     ZMFilter
+ * Method:    mLoad
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ZMFilter_mLoad
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     ZMFilter
+ * Method:    mSize
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ZMFilter_mSize
+  (JNIEnv *, jclass, ZMT_tree *);
+
+/*
+ * Class:     ZMFilter
+ * Method:    mKeyLen
+ * Signature: (J)S
+ */
+JNIEXPORT jshort JNICALL Java_ZMFilter_mKeyLen
+  (JNIEnv *, jclass, ZMT_tree *);
+
+/*
+ * Class:     ZMFilter
+ * Method:    mNodeSize
+ * Signature: (J)S
+ */
+JNIEXPORT jshort JNICALL Java_ZMFilter_mNodeSize
+  (JNIEnv *, jclass, ZMT_tree *);
+
+/*
+ * Class:     ZMFilter
+ * Method:    mVersion
+ * Signature: (J)S
+ */
+JNIEXPORT jshort JNICALL Java_ZMFilter_mVersion
+  (JNIEnv *, jclass, ZMT_tree *);
+
 #ifdef __cplusplus
 }
 #endif

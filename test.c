@@ -8,12 +8,11 @@ static void memrev(uint8 *key, uint8 len) {
 }
 
 static void testSave() {
-  ZMT_tree *tree = zmNew();
+  ZMT_tree *tree = zmNewTree(4, 2);
   srand((uint32)time(0));
   // clock_t st = clock();
-  zmInit(tree, 4, 2);
   uint32 i, j;
-  for (i = 0; i < 8888888; i++) {
+  for (i = 0; i < 8888; i++) {
     j = rand() * rand();
     // j = i;
     // memrev((uint8 *)&j, tree->idLen);
@@ -22,7 +21,8 @@ static void testSave() {
   printf("maxLen:%d,size:%d,node:%d\n", tree->maxLen, tree->size,
          tree->nodeCount);
   FILE *fp;
-  fp = fopen("tree.dat", "wb");
+  fp = _wfopen(L"赵名.dat", L"wb");
+  // fp = fopen("赵名.dat", "wb");
   if (fp) {
     if (zmDumpTree(tree, fp) != 1) printf("save error\n");
     fclose(fp);
@@ -32,22 +32,22 @@ static void testSave() {
 
 static void testLoad() {
   testSave();
-  ZMT_tree *tree = zmNew();
-  FILE *fp;
-  fp = fopen("tree.dat", "rb");
+  FILE *fp = fopen("赵名.dat", "rb");
   if (fp) {
-    if (zmLoadTree(tree, fp) == 1) {
+    ZMT_tree *tree = zmLoadTree(fp);
+    fclose(fp);
+    if (tree) {
       printf("maxLen:%d,size:%d,node:%d\n", tree->maxLen, tree->size,
              tree->nodeCount);
       printf("check:%d", zmCheck(tree));
+      zmDeleteTree(tree);
     } else
       printf("load error\n");
-    fclose(fp);
   }
-  zmDeleteTree(tree);
 }
 
 int main() {
-  testLoad();
-  // testSave();
+  // testLoad();
+  testSave();
+  return 0;
 }

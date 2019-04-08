@@ -1,14 +1,12 @@
 #include "../ZMT_tree.h"
 
-// #include <stdio.h>
+#include <stdio.h>
 #include <string.h>
 #include "ZMFilter.h"
 
 JNIEXPORT jlong JNICALL Java_ZMFilter_mCreate(JNIEnv *env, jclass cls, jshort i,
                                               jshort j) {
-  ZMT_tree *tree = zmNew();
-  zmInit(tree, i, j);
-  return (jlong)tree;
+  return (jlong)zmNewTree(i, j);
 }
 
 JNIEXPORT void JNICALL Java_ZMFilter_mFree(JNIEnv *env, jclass cls,
@@ -25,6 +23,26 @@ JNIEXPORT jboolean JNICALL Java_ZMFilter_mCheck(JNIEnv *env, jclass cls,
                                                 ZMT_tree *tree) {
   if (zmCheck(tree)) return JNI_TRUE;
   return JNI_FALSE;
+}
+
+JNIEXPORT jlong JNICALL Java_ZMFilter_mSize(JNIEnv *env, jclass cls,
+                                            ZMT_tree *tree) {
+  return tree->size;
+}
+
+JNIEXPORT jshort JNICALL Java_ZMFilter_mKeyLen(JNIEnv *env, jclass cls,
+                                               ZMT_tree *tree) {
+  return tree->idLen;
+}
+
+JNIEXPORT jshort JNICALL Java_ZMFilter_mNodeSize(JNIEnv *env, jclass cls,
+                                                 ZMT_tree *tree) {
+  return tree->nodeSize;
+}
+
+JNIEXPORT jshort JNICALL Java_ZMFilter_mVersion(JNIEnv *env, jclass cls,
+                                                ZMT_tree *tree) {
+  return tree->version;
 }
 
 JNIEXPORT jint JNICALL Java_ZMFilter_mAdd(JNIEnv *env, jclass cls,
@@ -77,4 +95,41 @@ JNIEXPORT jint JNICALL Java_ZMFilter_mSearch(JNIEnv *env, jclass cls,
     (*env)->ReleaseByteArrayElements(env, jba, key, 0);
   }
   return i;
+}
+
+JNIEXPORT jboolean JNICALL Java_ZMFilter_mDump(JNIEnv *env, jclass cls,
+                                               ZMT_tree *tree,
+                                               jstring filePath) {
+  jboolean result = JNI_FALSE;
+  const jchar *filename = (*env)->GetStringChars(env, filePath, NULL);
+  // const char *filename = (*env)->GetStringUTFChars(env, filePath, NULL);
+  if (filename != NULL) {
+    FILE *fp = _wfopen(filename, L"wb");
+    if (fp) {
+      if (zmDumpTree(tree, fp) == 1) {
+        result = JNI_TRUE;
+      }
+      fclose(fp);
+    }
+    (*env)->ReleaseStringChars(env, filePath, filename);
+    // (*env)->ReleaseStringUTFChars(env, filePath, filename);
+  }
+  return result;
+}
+
+JNIEXPORT jlong JNICALL Java_ZMFilter_mLoad(JNIEnv *env, jclass cls,
+                                            jstring filePath) {
+  ZMT_tree *tree = 0;
+  const jchar *filename = (*env)->GetStringChars(env, filePath, NULL);
+  // const char *filename = (*env)->GetStringUTFChars(env, filePath, NULL);
+  if (filename != NULL) {
+    FILE *fp = _wfopen(filename, L"rb");
+    if (fp) {
+      tree = zmLoadTree(fp);
+      fclose(fp);
+    }
+    (*env)->ReleaseStringChars(env, filePath, filename);
+    // (*env)->ReleaseStringUTFChars(env, filePath, filename);
+  }
+  return (jlong)tree;
 }

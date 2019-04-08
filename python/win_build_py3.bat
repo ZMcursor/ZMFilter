@@ -1,0 +1,1 @@
+gcc -std=c99 -DMS_WIN64 -Ofast -fPIC -shared -I"C:\Program Files\Python36\include" -L"C:\Program Files\Python36\libs" ..\ZMT_tree.c ZMT_tree_py3.c -o ZMT_tree.pyd -lpython36

@@ -1,18 +1,18 @@
-import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 class test {
 
     public static void main(String[] args) throws Throwable {
-        test(10000000);
-        // testMultiThread(100000002, 3);
+        // test(10000000);
+        // testMultiThread(10000002, 3);
         // testBalance();
+        testDump();
     }
 
     public static void testMultiThread(int num, int threadCount) throws Throwable {
         ZMFilter tree = new ZMFilter(8);
-        System.out.println("adding");
+        System.out.println("testing add thread:" + threadCount);
         final CountDownLatch countAdd = new CountDownLatch(threadCount);
         Runnable addRunnable = new Runnable() {
             @Override
@@ -49,12 +49,13 @@ class test {
         // System.out.println("threadCount:" + Thread.activeCount());
         System.out.println("time consuming:" + t + "ms");
         System.out.println("count per millisecond:" + num / t + "/ms");
+        System.out.println("finish testing");
         tree.free();
     }
 
     public static void test(int num) {
         ZMFilter tree = new ZMFilter(8);
-        System.out.println("adding");
+        System.out.println("testing add");
         long t = System.currentTimeMillis();
         add(tree, num);
         t = System.currentTimeMillis() - t;
@@ -67,6 +68,7 @@ class test {
         t = System.currentTimeMillis() - t;
         System.out.println("time consuming:" + t + "ms");
         System.out.println("count per millisecond:" + num / t + "/ms");
+        System.out.println("finish testing");
         tree.free();
     }
 
@@ -74,7 +76,7 @@ class test {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("testing balance");
         Random random = new Random(System.currentTimeMillis());
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) {
             for (int j = 0; j < 500; j++) {
                 tree.add(random.nextLong());
             }
@@ -82,6 +84,23 @@ class test {
                 System.out.println("not order");
         }
         System.out.println("finish testing");
+        tree.free();
+    }
+
+    public static void testDump() {
+        ZMFilter tree = new ZMFilter(8);
+        for (int i = 0; i < 100000; i++) {
+            tree.add(i);
+        }
+        if (tree.dump("赵名.dat")) {
+            System.out.println("save success");
+            System.out.println("size:" + tree.size() + ";nodeCount:" + tree.nodeCount());
+            tree.free();
+            tree = ZMFilter.load("赵名.dat");
+            System.out.println("load success");
+            System.out.println("size:" + tree.size() + ";nodeCount:" + tree.nodeCount());
+        } else
+            System.out.println("save fail");
         tree.free();
     }
 

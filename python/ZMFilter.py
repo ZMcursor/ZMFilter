@@ -1,21 +1,22 @@
 import ZMT_tree
+# from past.builtins import long
 
 
 class Filter(object):
     def __init__(self, idLen, nodeSize=0):
-        if isinstance(idLen, int) and isinstance(nodeSize, int):
-            self.__tree = ZMT_tree.ZMT_tree(idLen, nodeSize)
-        else:
-            raise TypeError
+        assert isinstance(idLen, int) and isinstance(nodeSize, int)
+        self.__tree = ZMT_tree.ZMT_tree(idLen, nodeSize)
 
     def add(self, key):
-        result = self.__tree.add(long(key))
+        result = self.__tree.add(key)
+        # result = self.__tree.add(long(key))
         if result is None:
             raise ValueError
         return result
 
     def search(self, key):
-        result = self.__tree.search(long(key))
+        result = self.__tree.search(key)
+        # result = self.__tree.search(long(key))
         if result is None:
             raise ValueError
         return result

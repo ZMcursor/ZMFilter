@@ -1,3 +1,4 @@
+import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 
 public class ZMFilter {
@@ -6,7 +7,7 @@ public class ZMFilter {
      * 加载动态链接库，暂时使用绝对路径，修改为自己的路径
      */
     static {
-        System.load("E:\\work\\MyCode\\ZMFilter\\java\\ZMT_tree.dll");
+        System.load("G:\\MyCode\\ZMFilter\\java\\ZMT_tree.dll");
     }
 
     /**
@@ -55,6 +56,19 @@ public class ZMFilter {
             tree = mCreate(this.keyLen, this.nodeSize);
         } else
             throw new IllegalArgumentException("the value of keyLen most in (0,256) and nodeSize most in [0,256)");
+    }
+
+    /**
+     * 新建一个反序列化来的滤重实例
+     * 
+     * @see #load(String)
+     * 
+     */
+    private ZMFilter(long tree, long size, short keyLen, short nodeSize) {
+        this.tree = tree;
+        this.size = size;
+        this.keyLen = keyLen;
+        this.nodeSize = nodeSize;
     }
 
     /**
@@ -109,6 +123,17 @@ public class ZMFilter {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
         return mNodeCount(tree);
+    }
+
+    /**
+     * 获取T-tree的版本
+     * 
+     * @throws NullPointerException 滤重已经被释放
+     */
+    public long version() {
+        if (tree == 0)
+            throw new NullPointerException("Filter have being released");
+        return mVersion(tree);
     }
 
     /**
@@ -207,6 +232,19 @@ public class ZMFilter {
             return result > 0;
     }
 
+    public boolean dump(String filePath) {
+        if (tree == 0)
+            throw new NullPointerException("Filter have being released");
+        return mDump(tree, filePath);
+    }
+
+    public static ZMFilter load(String filePath) {
+        long tree = mLoad(filePath);
+        if (tree == 0)
+            throw new RuntimeException();
+        return new ZMFilter(tree, mSize(tree), mKeyLen(tree), mNodeSize(tree));
+    }
+
     private static native long mCreate(short keyLen, short nodeSize);
 
     private static native void mFree(long tree);
@@ -218,4 +256,16 @@ public class ZMFilter {
     private static native int mAdd(long tree, byte[] key);
 
     private static native int mSearch(long tree, byte[] key);
+
+    private static native boolean mDump(long tree, String filePath);
+
+    private static native long mLoad(String filePath);
+
+    private static native long mSize(long tree);
+
+    private static native short mKeyLen(long tree);
+
+    private static native short mNodeSize(long tree);
+
+    private static native short mVersion(long tree);
 }

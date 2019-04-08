@@ -4,10 +4,6 @@
 
 #include "ZMT_tree.h"
 
-// bool
-#define True 1
-#define False 0
-
 //左右子树
 #define RED ((int8)1)
 #define BALCK ((int8)-1)
@@ -110,41 +106,29 @@ static Node *buildTree(Node *head, uint32 nodeCount) {
                                                         : node->right->high + 1;
       break;
   }
-  // if (mid) {
-  //   uint32 temp = mid;
-  //   while (temp--) node = node->next;
-  //   node->left = buildTree(head, mid);
-  //   node->left->parent = node;
-  //   node->left->color = RED;
-  //   if (nodeCount == 2) {
-  //     node->right = NULL;
-  //     node->high = 1;
-  //   } else {
-  //     node->right = buildTree(node->next, nodeCount - mid - 1);
-  //     node->right->parent = node;
-  //     node->right->color = BALCK;
-  //     node->high = node->left->high > node->right->high ? node->left->high +
-  //     1
-  //                                                       : node->right->high +
-  //                                                       1;
-  //   }
-  // } else {
-  //   node->left = NULL;
-  //   node->right = NULL;
-  //   node->high = 0;
-  // }
   return node;
 }
 
-int zmLoadTree(ZMT_tree *tree, FILE *fp) {
+ZMT_tree *zmLoadTree(FILE *fp) {
+  ZMT_tree *tree = malloc(sizeof(ZMT_tree));
+
   uint8 *data = ((uint8 *)tree) + TREE_OFFSET;
   if (!fread(data, sizeof(ZMT_tree) - TREE_OFFSET, 1, fp)) {
-    return ERROR;
+    free(tree);
+    return 0;
   }
-  if (tree->version != VERSION) return ERROR;
+  if (tree->version != VERSION) {
+    free(tree);
+    return 0;
+  }
   tree->maxLen = LIST_SIZE / tree->idLen;
   tree->minLen = (tree->maxLen + 1) >> 1;
-  if (!tree->size) return True;
+  if (!tree->size) {
+    tree->root = NULL;
+    tree->head = NULL;
+    tree->nodeCount = 0;
+    return tree;
+  }
 
   uint32 nodeCount = tree->size / ((uint32)(tree->maxLen * LOAD_FACTER));
   uint16 len;
@@ -175,7 +159,9 @@ int zmLoadTree(ZMT_tree *tree, FILE *fp) {
   node->len = len;
   data = ((uint8 *)node) + NODE_OFFSET;
   if (!fread(data, tree->idLen, node->len, fp)) {
-    return ERROR;
+    free(node);
+    free(tree);
+    return 0;
   }
   Node *newNode;
   uint32 i;
@@ -185,12 +171,13 @@ int zmLoadTree(ZMT_tree *tree, FILE *fp) {
     newNode->next->prev = newNode;
     newNode->prev = node;
     node->next = newNode;
-    node = newNode;
     newNode->len = len;
     data = ((uint8 *)newNode) + NODE_OFFSET;
     if (!fread(data, tree->idLen, newNode->len, fp)) {
-      return ERROR;
+      zmDeleteTree(tree);
+      return 0;
     }
+    node = newNode;
   }
   len++;
   for (; i < tree->nodeCount; i++) {
@@ -199,18 +186,22 @@ int zmLoadTree(ZMT_tree *tree, FILE *fp) {
     newNode->next->prev = newNode;
     newNode->prev = node;
     node->next = newNode;
-    node = newNode;
     newNode->len = len;
     data = ((uint8 *)newNode) + NODE_OFFSET;
     if (!fread(data, tree->idLen, newNode->len, fp)) {
-      return ERROR;
+      zmDeleteTree(tree);
+      return 0;
     }
+    node = newNode;
   }
-  if (fread(&i, 1, 1, fp) || !feof(fp)) return ERROR;
+  if (fread(&i, 1, 1, fp) || !feof(fp)) {
+    zmDeleteTree(tree);
+    return 0;
+  }
   tree->root = buildTree(tree->head, tree->nodeCount);
   tree->root->parent = NULL;
   tree->root->color = 0;
-  return True;
+  return tree;
 }
 
 static Node *LLBalance(ZMT_tree *tree, Node *node) {
@@ -724,23 +715,18 @@ int zmAdd(ZMT_tree *tree, uint8 *key) {
   }
 }
 
-ZMT_tree *zmNew() {
+ZMT_tree *zmNewTree(uint8 id_len, uint8 node_size) {
   ZMT_tree *tree = malloc(sizeof(ZMT_tree));
   tree->root = NULL;
   tree->head = NULL;
   tree->size = 0;
   tree->nodeCount = 0;
   tree->version = VERSION;
-  tree->idLen = 0;
-  tree->nodeSize = 4;
-  return tree;
-}
-
-void zmInit(ZMT_tree *tree, uint8 id_len, uint8 node_size) {
   tree->idLen = id_len;
-  if (node_size) tree->nodeSize = node_size;
+  tree->nodeSize = (node_size ? node_size : 4);
   tree->maxLen = LIST_SIZE / id_len;
   tree->minLen = (tree->maxLen + 1) >> 1;
+  return tree;
 }
 
 void zmDeleteTree(ZMT_tree *tree) {
@@ -750,7 +736,7 @@ void zmDeleteTree(ZMT_tree *tree) {
       node = node->prev;
       free(node->next);
     }
-    free(tree->head);
+    free(node);
   }
   free(tree);
 }
