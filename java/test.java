@@ -1,13 +1,14 @@
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.io.File;
 
 class test {
 
     public static void main(String[] args) throws Throwable {
-        // test(10000000);
+        test(10000000);
         // testMultiThread(10000002, 3);
         // testBalance();
-        testDump();
+        // testDump();
     }
 
     public static void testMultiThread(int num, int threadCount) throws Throwable {
@@ -76,7 +77,7 @@ class test {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("testing balance");
         Random random = new Random(System.currentTimeMillis());
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
             for (int j = 0; j < 500; j++) {
                 tree.add(random.nextLong());
             }

@@ -21,8 +21,12 @@ static void testSave() {
   printf("maxLen:%d,size:%d,node:%d\n", tree->maxLen, tree->size,
          tree->nodeCount);
   FILE *fp;
+#ifdef linux
+  fp = fopen("赵名.dat", "wb");
+#endif
+#ifdef _WIN32
   fp = _wfopen(L"赵名.dat", L"wb");
-  // fp = fopen("赵名.dat", "wb");
+#endif
   if (fp) {
     if (zmDumpTree(tree, fp) != 1) printf("save error\n");
     fclose(fp);

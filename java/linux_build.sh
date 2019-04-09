@@ -1,1 +1,1 @@
-gcc -std=c99 -Ofast -fPIC -shared -I"C:\Program Files\Java\jdk1.8.0_181\include" -I"C:\Program Files\Java\jdk1.8.0_181\include\win32" ..\ZMT_tree.c ZMFilter.c -o ZMT_tree.dll
+gcc -std=c99 -Ofast -fPIC -shared -I$JAVA_HOME/include -I$JAVA_HOME/include/linux ../ZMT_tree.c ZMFilter.c -o libZMT_tree.so

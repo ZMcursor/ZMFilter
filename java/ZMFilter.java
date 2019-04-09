@@ -1,4 +1,4 @@
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.nio.ByteBuffer;
 
 public class ZMFilter {
@@ -7,7 +7,9 @@ public class ZMFilter {
      * 加载动态链接库，暂时使用绝对路径，修改为自己的路径
      */
     static {
-        System.load("G:\\MyCode\\ZMFilter\\java\\ZMT_tree.dll");
+        // System.load(System.getProperty("user.dir") + File.separator + "java" +
+        // File.separator + "ZMT_tree.dll");
+        System.loadLibrary("ZMT_tree");
     }
 
     /**
@@ -185,11 +187,11 @@ public class ZMFilter {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
         int result;
-        synchronized (this) {
-            result = mAdd(tree, key);
-            if (result > 0)
-                size++;
-        }
+        // synchronized (this) {
+        result = mAdd(tree, key);
+        if (result > 0)
+            size++;
+        // }
         if (result < 0)
             throw new IllegalArgumentException("key is longer than keyLen");
         else

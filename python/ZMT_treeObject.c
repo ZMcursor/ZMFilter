@@ -15,13 +15,45 @@ static PyObject *mNew(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
 static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
   int idLen, nodeSize;
-  if (PyArg_ParseTuple(args, "II", &idLen, &nodeSize)) {
-    if (idLen > 0 && idLen < 256 && nodeSize >= 0 && nodeSize < 256) {
-      self->tree = zmNewTree(idLen, nodeSize);
-      // printf("idLen:%d,nodeSize:%d\n", idLen, nodeSize);
-      return 0;
+  wchar_t *filename;
+  if (PyArg_ParseTuple(args, "IIZ", &idLen, &nodeSize, &filename)) {
+    if (idLen) {
+      if (idLen > 0 && idLen < 256 && nodeSize >= 0 && nodeSize < 256) {
+        self->tree = zmNewTree(idLen, nodeSize);
+        // printf("idLen:%d,nodeSize:%d\n", idLen, nodeSize);
+        return 0;
+      }
+    } else {
+      if (filename) {
+        FILE *fp = _wfopen(filename, L"rb");
+        if (fp) {
+          self->tree = zmLoadTree(fp);
+          fclose(fp);
+          return 0;
+        }
+      }
     }
   }
+  // if (PyArg_ParseTuple(args, "IIO", &idLen, &nodeSize, filePath)) {
+  //   if (idLen) {
+  //     if (idLen > 0 && idLen < 256 && nodeSize >= 0 && nodeSize < 256) {
+  //       self->tree = zmNewTree(idLen, nodeSize);
+  //       // printf("idLen:%d,nodeSize:%d\n", idLen, nodeSize);
+  //       return 0;
+  //     }
+  //   } else {
+  //     wchar_t *filename = PyUnicode_AsWideCharString(filePath, NULL);
+  //     if (filename) {
+  //       FILE *fp = _wfopen(filename, L"rb");
+  //       PyMem_Free(filename);
+  //       if (fp) {
+  //         self->tree = zmLoadTree(fp);
+  //         fclose(fp);
+  //         return 0;
+  //       }
+  //     }
+  //   }
+  // }
   return -1;
 }
 
@@ -39,7 +71,7 @@ static void mDealloc(ZMT_treeObject *self) {
     self->tree = NULL;
   }
   Py_TYPE(self)->tp_free(self);
-  printf("mDealloc\n");
+  // printf("mDealloc\n");
 }
 
 static PyObject *mSize(ZMT_treeObject *self) {
@@ -56,6 +88,10 @@ static PyObject *mNodeCount(ZMT_treeObject *self) {
 
 static PyObject *mIdLen(ZMT_treeObject *self) {
   return PyLong_FromLong(self->tree->idLen);
+}
+
+static PyObject *mVersion(ZMT_treeObject *self) {
+  return PyLong_FromLong(self->tree->version);
 }
 
 static PyObject *mAdd(ZMT_treeObject *self, PyObject *key) {
@@ -104,14 +140,16 @@ static PyObject *mCheck(ZMT_treeObject *self) {
 }
 
 static PyMethodDef ZMT_tree_methods[] = {
-    {"size", (PyCFunction)mSize, METH_NOARGS, "Return item size"},
+    {"size", (PyCFunction)mSize, METH_NOARGS, "Return count of key"},
     {"nodeSize", (PyCFunction)mNodeSize, METH_NOARGS, "Return size of node"},
     {"nodeCount", (PyCFunction)mNodeCount, METH_NOARGS, "Return count of node"},
-    {"idLen", (PyCFunction)mIdLen, METH_NOARGS, "Return lenght of item"},
-    {"check", (PyCFunction)mCheck, METH_NOARGS, "Return lenght of item"},
+    {"idLen", (PyCFunction)mIdLen, METH_NOARGS, "Return lenght of key"},
+    {"version", (PyCFunction)mVersion, METH_NOARGS, "Return version of tree"},
+    {"check", (PyCFunction)mCheck, METH_NOARGS,
+     "Check whether tree is correct"},
     {"free", (PyCFunction)mFree, METH_NOARGS, "Release memory of tree"},
-    {"add", (PyCFunction)mAdd, METH_O, "Return lenght of item"},
-    {"search", (PyCFunction)mSearch, METH_O, "Return lenght of item"},
+    {"add", (PyCFunction)mAdd, METH_O, "add one key to the tree"},
+    {"search", (PyCFunction)mSearch, METH_O, "search one key in the tree"},
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
