@@ -15,8 +15,13 @@ static PyObject *mNew(PyTypeObject *type, PyObject *args, PyObject *kwds) {
 
 static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
   int idLen, nodeSize;
+#ifdef __linux__
+  char *filename;
+  if (PyArg_ParseTuple(args, "IIz", &idLen, &nodeSize, &filename)) {
+#elif _WIN32
   wchar_t *filename;
   if (PyArg_ParseTuple(args, "IIZ", &idLen, &nodeSize, &filename)) {
+#endif
     if (idLen) {
       if (idLen > 0 && idLen < 256 && nodeSize >= 0 && nodeSize < 256) {
         self->tree = zmNewTree(idLen, nodeSize);
@@ -25,11 +30,15 @@ static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
       }
     } else {
       if (filename) {
+#ifdef __linux__
+        FILE *fp = fopen(filename, "rb");
+#elif _WIN32
         FILE *fp = _wfopen(filename, L"rb");
+#endif
         if (fp) {
           self->tree = zmLoadTree(fp);
           fclose(fp);
-          return 0;
+          if (self->tree) return 0;
         }
       }
     }
@@ -57,6 +66,32 @@ static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
   return -1;
 }
 
+static PyObject *mDump(ZMT_treeObject *self, PyObject *args) {
+#ifdef __linux__
+  char *filename;
+  if (PyArg_Parse(args, "z", &filename)) {
+#elif _WIN32
+  wchar_t *filename;
+  if (PyArg_Parse(args, "Z", &filename)) {
+#endif
+    if (filename) {
+#ifdef __linux__
+      FILE *fp = fopen(filename, "wb");
+#elif _WIN32
+      FILE *fp = _wfopen(filename, L"wb");
+#endif
+      if (fp) {
+        if (zmDumpTree(self->tree, fp)) {
+          fclose(fp);
+          Py_RETURN_TRUE;
+        }
+        fclose(fp);
+      }
+    }
+  }
+  Py_RETURN_FALSE;
+}
+
 static void mFree(ZMT_treeObject *self) {
   if (self->tree != NULL) {
     zmDeleteTree(self->tree);
@@ -71,7 +106,7 @@ static void mDealloc(ZMT_treeObject *self) {
     self->tree = NULL;
   }
   Py_TYPE(self)->tp_free(self);
-  // printf("mDealloc\n");
+  printf("mDealloc\n");
 }
 
 static PyObject *mSize(ZMT_treeObject *self) {
@@ -149,6 +184,7 @@ static PyMethodDef ZMT_tree_methods[] = {
      "Check whether tree is correct"},
     {"free", (PyCFunction)mFree, METH_NOARGS, "Release memory of tree"},
     {"add", (PyCFunction)mAdd, METH_O, "add one key to the tree"},
+    {"dump", (PyCFunction)mDump, METH_O, "dump tree to file"},
     {"search", (PyCFunction)mSearch, METH_O, "search one key in the tree"},
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
@@ -165,3 +201,33 @@ static PyTypeObject ZMT_tree_Type = {
     .tp_init = (initproc)mInit,
     .tp_new = mNew,
 };
+
+static PyMethodDef ZMT_TreeModuleMethods[] = {{NULL, NULL, 0, NULL}};
+
+#if PY_MAJOR_VERSION == 2
+
+PyMODINIT_FUNC initZMT_tree(void) {
+  if (PyType_Ready(&ZMT_tree_Type) < 0) return;
+
+  PyObject *module = Py_InitModule("ZMT_tree", ZMT_TreeModuleMethods);
+  if (module == NULL) return;
+
+  Py_INCREF(&ZMT_tree_Type);
+  PyModule_AddObject(module, "ZMT_tree", (PyObject *)&ZMT_tree_Type);
+}
+#elif PY_MAJOR_VERSION == 3
+
+static PyModuleDef ZMT_TreeModule = {PyModuleDef_HEAD_INIT,
+                                     .m_name = "ZMT_Tree", .m_size = -1};
+
+PyMODINIT_FUNC PyInit_ZMT_tree(void) {
+  if (PyType_Ready(&ZMT_tree_Type) < 0) return NULL;
+
+  PyObject *module = PyModule_Create(&ZMT_TreeModule);
+  if (module == NULL) return NULL;
+
+  Py_INCREF(&ZMT_tree_Type);
+  PyModule_AddObject(module, "ZMT_tree", (PyObject *)&ZMT_tree_Type);
+  return module;
+}
+#endif

@@ -1,1 +1,1 @@
-gcc -std=c99 -Ofast -fPIC -shared -I/usr/include/python3.6/ ../ZMT_tree.c ZMT_tree_py3.c -o ZMT_tree.so -lpython3.6
+gcc -std=c99 -Ofast -fPIC -shared -I/usr/include/python3.6m/ ../ZMT_tree.c ZMT_treeObject.c -o ZMT_tree.so -lpython3.6m

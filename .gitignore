@@ -4,5 +4,6 @@
 *.dat
 __pycache__
 *.pyd
+*.pyc
 *.dll
 *.so
