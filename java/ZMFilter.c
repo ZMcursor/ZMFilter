@@ -103,13 +103,13 @@ JNIEXPORT jboolean JNICALL Java_ZMFilter_mDump(JNIEnv *env, jclass cls,
   jboolean result = JNI_FALSE;
 #ifdef __linux__
   const char *filename = (*env)->GetStringUTFChars(env, filePath, NULL);
-#elif _WIN32
+#elif defined _WIN32
   const jchar *filename = (*env)->GetStringChars(env, filePath, NULL);
 #endif
   if (filename) {
 #ifdef __linux__
     FILE *fp = fopen(filename, "wb");
-#elif _WIN32
+#elif defined _WIN32
     FILE *fp = _wfopen(filename, L"wb");
 #endif
     if (fp) {
@@ -118,7 +118,7 @@ JNIEXPORT jboolean JNICALL Java_ZMFilter_mDump(JNIEnv *env, jclass cls,
     }
 #ifdef __linux__
     (*env)->ReleaseStringUTFChars(env, filePath, filename);
-#elif _WIN32
+#elif defined _WIN32
     (*env)->ReleaseStringChars(env, filePath, filename);
 #endif
   }
@@ -130,13 +130,13 @@ JNIEXPORT jlong JNICALL Java_ZMFilter_mLoad(JNIEnv *env, jclass cls,
   ZMT_tree *tree = 0;
 #ifdef __linux__
   const char *filename = (*env)->GetStringUTFChars(env, filePath, NULL);
-#elif _WIN32
+#elif defined _WIN32
   const jchar *filename = (*env)->GetStringChars(env, filePath, NULL);
 #endif
   if (filename) {
 #ifdef __linux__
     FILE *fp = fopen(filename, "rb");
-#elif _WIN32
+#elif defined _WIN32
     FILE *fp = _wfopen(filename, L"rb");
 #endif
     if (fp) {
@@ -145,7 +145,7 @@ JNIEXPORT jlong JNICALL Java_ZMFilter_mLoad(JNIEnv *env, jclass cls,
     }
 #ifdef __linux__
     (*env)->ReleaseStringUTFChars(env, filePath, filename);
-#elif _WIN32
+#elif defined _WIN32
     (*env)->ReleaseStringChars(env, filePath, filename);
 #endif
   }

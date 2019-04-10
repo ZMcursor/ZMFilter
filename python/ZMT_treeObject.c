@@ -18,7 +18,7 @@ static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
 #ifdef __linux__
   char *filename;
   if (PyArg_ParseTuple(args, "IIz", &idLen, &nodeSize, &filename)) {
-#elif _WIN32
+#elif defined _WIN32
   wchar_t *filename;
   if (PyArg_ParseTuple(args, "IIZ", &idLen, &nodeSize, &filename)) {
 #endif
@@ -32,7 +32,7 @@ static int mInit(ZMT_treeObject *self, PyObject *args, PyObject *kwds) {
       if (filename) {
 #ifdef __linux__
         FILE *fp = fopen(filename, "rb");
-#elif _WIN32
+#elif defined _WIN32
         FILE *fp = _wfopen(filename, L"rb");
 #endif
         if (fp) {
@@ -70,14 +70,14 @@ static PyObject *mDump(ZMT_treeObject *self, PyObject *args) {
 #ifdef __linux__
   char *filename;
   if (PyArg_Parse(args, "z", &filename)) {
-#elif _WIN32
+#elif defined _WIN32
   wchar_t *filename;
   if (PyArg_Parse(args, "Z", &filename)) {
 #endif
     if (filename) {
 #ifdef __linux__
       FILE *fp = fopen(filename, "wb");
-#elif _WIN32
+#elif defined _WIN32
       FILE *fp = _wfopen(filename, L"wb");
 #endif
       if (fp) {
@@ -92,12 +92,13 @@ static PyObject *mDump(ZMT_treeObject *self, PyObject *args) {
   Py_RETURN_FALSE;
 }
 
-static void mFree(ZMT_treeObject *self) {
+static PyObject *mFree(ZMT_treeObject *self) {
   if (self->tree != NULL) {
     zmDeleteTree(self->tree);
     self->tree = NULL;
   }
   // printf("mFree\n");
+  Py_RETURN_NONE;
 }
 
 static void mDealloc(ZMT_treeObject *self) {
@@ -106,7 +107,7 @@ static void mDealloc(ZMT_treeObject *self) {
     self->tree = NULL;
   }
   Py_TYPE(self)->tp_free(self);
-  printf("mDealloc\n");
+  // printf("mDealloc\n");
 }
 
 static PyObject *mSize(ZMT_treeObject *self) {

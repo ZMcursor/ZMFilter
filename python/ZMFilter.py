@@ -1,4 +1,9 @@
 import ZMT_tree
+try:
+    # Python2
+    _num = long
+except Exception as e:
+    _num = int
 
 
 class Filter(object):
@@ -8,8 +13,7 @@ class Filter(object):
         self.__tree = ZMT_tree.ZMT_tree(idLen, nodeSize, filename)
 
     def add(self, key):
-        result = self.__tree.add(key)
-        # result = self.__tree.add(long(key))
+        result = self.__tree.add(_num(key))
         if result is None:
             raise ValueError
         return result
@@ -19,8 +23,7 @@ class Filter(object):
         return self.__tree.dump(filename)
 
     def search(self, key):
-        result = self.__tree.search(key)
-        # result = self.__tree.search(long(key))
+        result = self.__tree.search(_num(key))
         if result is None:
             raise ValueError
         return result
