@@ -1,4 +1,6 @@
 import ZMT_tree
+import threading
+
 try:
     # Python2
     _num = long
@@ -11,26 +13,31 @@ class Filter(object):
         assert isinstance(idLen, int) and isinstance(
             nodeSize, int) and (filename is None or isinstance(filename, str))
         self.__tree = ZMT_tree.ZMT_tree(idLen, nodeSize, filename)
+        self.__mutex = threading.Lock()
 
     def add(self, key):
-        result = self.__tree.add(_num(key))
+        with self.__mutex:
+            result = self.__tree.add(_num(key))
         if result is None:
             raise ValueError
         return result
 
     def dump(self, filename):
         assert isinstance(filename, str)
-        return self.__tree.dump(filename)
+        with self.__mutex:
+            return self.__tree.dump(filename)
 
     def search(self, key):
-        result = self.__tree.search(_num(key))
+        with self.__mutex:
+            result = self.__tree.search(_num(key))
         if result is None:
             raise ValueError
         return result
 
     def free(self):
-        self.__tree.free()
-        self.__tree = None
+        with self.__mutex:
+            self.__tree.free()
+            self.__tree = None
 
     def size(self):
         return self.__tree.size()

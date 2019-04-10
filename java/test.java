@@ -5,8 +5,8 @@ import java.io.File;
 class test {
 
     public static void main(String[] args) throws Throwable {
-        test(10000000);
-        // testMultiThread(10000002, 3);
+        // testAdd(10000000);
+        testMultiThread(10000002, 3);
         // testBalance();
         // testDump();
     }
@@ -54,7 +54,7 @@ class test {
         tree.free();
     }
 
-    public static void test(int num) {
+    public static void testAdd(int num) {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("testing add");
         long t = System.currentTimeMillis();

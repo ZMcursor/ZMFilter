@@ -1,4 +1,3 @@
-import java.io.File;
 import java.nio.ByteBuffer;
 
 public class ZMFilter {
@@ -76,7 +75,7 @@ public class ZMFilter {
     /**
      * 释放滤重占用的内存
      */
-    public void free() {
+    public synchronized void free() {
         if (tree != 0) {
             long temp = tree;
             tree = 0;
@@ -184,14 +183,14 @@ public class ZMFilter {
      * @throws IllegalArgumentException key的有效长度大于keyLen
      */
     public boolean add(byte[] key) {
-        if (tree == 0)
-            throw new NullPointerException("Filter have being released");
         int result;
-        // synchronized (this) {
-        result = mAdd(tree, key);
-        if (result > 0)
-            size++;
-        // }
+        synchronized (this) {
+            if (tree == 0)
+                throw new NullPointerException("Filter have being released");
+            result = mAdd(tree, key);
+            if (result > 0)
+                size++;
+        }
         if (result < 0)
             throw new IllegalArgumentException("key is longer than keyLen");
         else
@@ -222,10 +221,10 @@ public class ZMFilter {
      * @throws IllegalArgumentException key的有效长度大于keyLen
      */
     public boolean search(byte[] key) {
-        if (tree == 0)
-            throw new NullPointerException("Filter have being released");
         int result;
         synchronized (this) {
+            if (tree == 0)
+                throw new NullPointerException("Filter have being released");
             result = mSearch(tree, key);
         }
         if (result < 0)
@@ -234,7 +233,7 @@ public class ZMFilter {
             return result > 0;
     }
 
-    public boolean dump(String filePath) {
+    public synchronized boolean dump(String filePath) {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
         return mDump(tree, filePath);
