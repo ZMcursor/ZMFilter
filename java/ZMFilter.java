@@ -189,7 +189,7 @@ public class ZMFilter {
                 throw new NullPointerException("Filter have being released");
             result = mAdd(tree, key);
             if (result > 0)
-                size++;
+                ++size;
         }
         if (result < 0)
             throw new IllegalArgumentException("key is longer than keyLen");

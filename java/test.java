@@ -1,72 +1,85 @@
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.io.File;
+import java.util.concurrent.CyclicBarrier;
 
 class test {
 
+    private static long t;
+
     public static void main(String[] args) throws Throwable {
-        // testAdd(10000000);
-        testMultiThread(10000002, 3);
+        testAdd(100000000);
+        // testMultiThread(10000002, 3);
         // testBalance();
         // testDump();
     }
 
+    private static CyclicBarrier cyclicBarrier;
+
     public static void testMultiThread(int num, int threadCount) throws Throwable {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("testing add thread:" + threadCount);
-        final CountDownLatch countAdd = new CountDownLatch(threadCount);
-        Runnable addRunnable = new Runnable() {
-            @Override
-            public void run() {
-                add(tree, num / threadCount);
-                countAdd.countDown();
-            }
-        };
-        long t = System.currentTimeMillis();
+
+        cyclicBarrier = new CyclicBarrier(threadCount, () -> t = System.currentTimeMillis());
+
+        final CountDownLatch cdlAdd = new CountDownLatch(threadCount);
+        final CountDownLatch cdlSearch = new CountDownLatch(threadCount);
+
         for (int i = 0; i < threadCount; i++) {
-            new Thread(addRunnable).start();
+            new Thread(() -> {
+                try {
+                    cyclicBarrier.await();
+                    cyclicBarrier.reset();
+                    add(tree, num / threadCount);
+                    cdlAdd.countDown();
+
+                    Thread.sleep(1000);
+
+                    cyclicBarrier.await();
+                    search(tree, num / threadCount);
+                    cdlSearch.countDown();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).start();
         }
-        countAdd.await();
+
+        cdlAdd.await();
         t = System.currentTimeMillis() - t;
-        // System.out.println("threadCount:" + Thread.activeCount());
+
         System.out.println("size:" + tree.size() + ";time consuming:" + t + "ms");
         System.out.println("count per millisecond:" + tree.size() / t + "/ms");
         System.out.println("check:" + tree.check());
+
         System.out.println("searching");
-        final CountDownLatch countSearch = new CountDownLatch(threadCount);
-        addRunnable = new Runnable() {
-            @Override
-            public void run() {
-                search(tree, num / threadCount);
-                countSearch.countDown();
-            }
-        };
-        t = System.currentTimeMillis();
-        for (int i = 0; i < threadCount; i++) {
-            new Thread(addRunnable).start();
-        }
-        countSearch.await();
+
+        cdlSearch.await();
         t = System.currentTimeMillis() - t;
-        // System.out.println("threadCount:" + Thread.activeCount());
+
         System.out.println("time consuming:" + t + "ms");
         System.out.println("count per millisecond:" + num / t + "/ms");
         System.out.println("finish testing");
+
         tree.free();
+        cyclicBarrier = null;
     }
 
     public static void testAdd(int num) {
         ZMFilter tree = new ZMFilter(8);
         System.out.println("testing add");
-        long t = System.currentTimeMillis();
+
+        t = System.currentTimeMillis();
         add(tree, num);
         t = System.currentTimeMillis() - t;
+
         System.out.println("size:" + tree.size() + ";time consuming:" + t + "ms");
         System.out.println("count per millisecond:" + tree.size() / t + "/ms");
         System.out.println("check:" + tree.check());
         System.out.println("searching");
+
         t = System.currentTimeMillis();
         search(tree, num);
         t = System.currentTimeMillis() - t;
+
         System.out.println("time consuming:" + t + "ms");
         System.out.println("count per millisecond:" + num / t + "/ms");
         System.out.println("finish testing");
