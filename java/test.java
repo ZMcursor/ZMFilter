@@ -7,7 +7,7 @@ class test {
     private static long t;
 
     public static void main(String[] args) throws Throwable {
-        testAdd(100000000);
+        testAdd(10000000);
         // testMultiThread(10000002, 3);
         // testBalance();
         // testDump();
