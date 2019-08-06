@@ -3,7 +3,7 @@ import java.nio.ByteBuffer;
 public class ZMFilter {
 
     /**
-     * 加载动态链接库，暂时使用绝对路径，修改为自己的路径
+     * 加载动态链接库，暂时使用绝对路径，可修改为自己的路径
      */
     static {
         // System.load(System.getProperty("user.dir") + File.separator + "java" +
@@ -233,16 +233,34 @@ public class ZMFilter {
             return result > 0;
     }
 
+    /**
+     * 序列化T-tree到磁盘
+     * 
+     * @param filePath 序列化文件路径，文件不存在会自动创建，存在则会覆盖
+     * 
+     * @return true 序列化成功，false 序列化失败
+     * 
+     * @throws NullPointerException 滤重已经被释放
+     */
     public synchronized boolean dump(String filePath) {
         if (tree == 0)
             throw new NullPointerException("Filter have being released");
         return mDump(tree, filePath);
     }
 
-    public static ZMFilter load(String filePath) {
+    /**
+     * 反序列化文件为T-tree
+     * 
+     * @param filePath 序列化文件路径
+     * 
+     * @return ZMFilter 反序列化成功后的ZMFilter实例
+     * 
+     * @throws Exception 反序列化失败，文件不存在、版本不匹配或者文件格式错误
+     */
+    public static ZMFilter load(String filePath) throws Exception {
         long tree = mLoad(filePath);
         if (tree == 0)
-            throw new RuntimeException();
+            throw new Exception("File don't exits or isn't a T-tree dump file");
         return new ZMFilter(tree, mSize(tree), mKeyLen(tree), mNodeSize(tree));
     }
 

@@ -1,14 +1,14 @@
 #include <time.h>
 #include "ZMT_tree.c"
 
-//反转数组
+// 反转数组
 static void memrev(uint8 *key, uint8 len) {
   int8 i = -1;
   while (++i < --len) key[i] ^= key[len] ^= key[i] ^= key[len];
 }
 
 uint32 number = RAND_MAX >> 1;
-//整型随机数
+// 生成整型随机数
 static uint32 nextInt() {
   uint32 n;
 #ifdef __linux__
@@ -25,7 +25,7 @@ static uint32 nextInt() {
   }
   return n;
 }
-//长整型随机数
+// 生成长整型随机数
 static uint64 nextLong() { return (((uint64)nextInt()) << 32) + nextInt(); }
 
 static void add(ZMT_tree *tree, uint32 num) {
@@ -48,6 +48,7 @@ static void search(ZMT_tree *tree, uint32 num) {
   }
 }
 
+// 测试写入读取速度
 static void test(uint32 num) {
   ZMT_tree *tree = zmNewTree(8, 4);
   printf("testing add\n");
@@ -69,6 +70,7 @@ static void test(uint32 num) {
   zmDeleteTree(tree);
 }
 
+// 测试序列化
 static void testDump() {
   printf("testing dump\n");
   ZMT_tree *tree = zmNewTree(4, 2);
@@ -95,6 +97,7 @@ static void testDump() {
   zmDeleteTree(tree);
 }
 
+// 测试反序列化
 static void testLoad() {
   printf("testing load\n");
   FILE *fp;

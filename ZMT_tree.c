@@ -4,23 +4,28 @@
 
 #include "ZMT_tree.h"
 
-//用来区分左右子树
+// 用来区分左右子树
 #define RED ((int8)1)
 #define BALCK ((int8)-1)
 
+// 序列化T-tree、Node结构偏移
 #define TREE_OFFSET (2 * sizeof(struct Node *) + 8)
 #define NODE_OFFSET (5 * sizeof(struct Node *) + 4)
 
+// 反序列化时Node的最低、最佳和最高负载系数
 #define LOW_LOAD_FACTER ((float)(0.6))
 #define LOAD_FACTER ((float)(0.75))
 #define OVER_LOAD_FACTER ((float)(0.9))
 
+// 序列化T-tree到文件，先保存T-tree结构，然后遍历Node链表，保存Node中的key列表
 int zmDumpTree(ZMT_tree *tree, FILE *fp) {
   uint8 *data = ((uint8 *)tree) + TREE_OFFSET;
+  // 将T-tree结构的关键部分写入文件
   if (!fwrite(data, sizeof(ZMT_tree) - TREE_OFFSET, 1, fp)) {
     return False;
   }
   if (tree->head != NULL) {
+    // 遍历Node链表，将Node中的key列表写入文件
     Node *node = tree->head;
     do {
       data = ((uint8 *)node) + NODE_OFFSET;
@@ -33,6 +38,7 @@ int zmDumpTree(ZMT_tree *tree, FILE *fp) {
   return True;
 }
 
+// 根据双向循环链表重建AVL树
 static Node *buildTree(Node *head, uint32 nodeCount) {
   Node *node;
   switch (nodeCount) {
@@ -109,18 +115,22 @@ static Node *buildTree(Node *head, uint32 nodeCount) {
   return node;
 }
 
+// 从文件反序列化T-tree
 ZMT_tree *zmLoadTree(FILE *fp) {
   ZMT_tree *tree = malloc(sizeof(ZMT_tree));
 
   uint8 *data = ((uint8 *)tree) + TREE_OFFSET;
+  // 读取数据到T-tree结构
   if (!fread(data, sizeof(ZMT_tree) - TREE_OFFSET, 1, fp)) {
     free(tree);
     return NULL;
   }
+  // 判断版本是否匹配
   if (tree->version != VERSION) {
     free(tree);
     return NULL;
   }
+  // 计算剩余关键参数
   tree->maxLen = LIST_SIZE / tree->idLen;
   tree->minLen = (tree->maxLen + 1) >> 1;
   if (!tree->size) {
@@ -129,7 +139,7 @@ ZMT_tree *zmLoadTree(FILE *fp) {
     tree->nodeCount = 0;
     return tree;
   }
-
+  // 计算合适的NodeCount值
   uint32 nodeCount = tree->size / ((uint32)(tree->maxLen * LOAD_FACTER));
   uint16 len;
   if (nodeCount) {
@@ -158,6 +168,7 @@ ZMT_tree *zmLoadTree(FILE *fp) {
   Node *node = tree->head;
   node->len = len;
   data = ((uint8 *)node) + NODE_OFFSET;
+  // 读取头节点
   if (!fread(data, tree->idLen, node->len, fp)) {
     free(node);
     free(tree);
@@ -194,13 +205,16 @@ ZMT_tree *zmLoadTree(FILE *fp) {
     }
     node = newNode;
   }
+  // 判断是否读取到文件末尾，否则认为文件格式错误
   if (fread(&i, 1, 1, fp) || !feof(fp)) {
     zmDeleteTree(tree);
     return NULL;
   }
+  // 重建T-tree
   tree->root = buildTree(tree->head, tree->nodeCount);
   tree->root->parent = NULL;
   tree->root->color = 0;
+  // 检查结构正确性
   if (!zmCheck(tree)) {
     zmDeleteTree(tree);
     return NULL;
@@ -260,6 +274,7 @@ static Node *RRBalance(ZMT_tree *tree, Node *node) {
   return tNode;
 }
 
+// 对节点执行平衡操作
 static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
   if (fact > 1) {
     Node *tNode = node->left;
@@ -284,7 +299,6 @@ static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
 
         return tNode;
       } else {
-        // printf("lr,");
         Node *pNode = tNode->right;
 
         pNode->parent = node->parent;
@@ -355,7 +369,6 @@ static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
 
         return tNode;
       } else {
-        // printf("rl,");
         Node *pNode = tNode->left;
 
         pNode->parent = node->parent;
@@ -407,6 +420,7 @@ static Node *balanceNode(ZMT_tree *tree, Node *node, int8 fact) {
   return node;
 }
 
+// 对树重平衡
 static void rebalance(ZMT_tree *tree, Node *node) {
   uint8 maxHigh, leftHigh, rightHigh;
   while (node != NULL) {
@@ -414,7 +428,9 @@ static void rebalance(ZMT_tree *tree, Node *node) {
     rightHigh = 0;
     if (node->left != NULL) leftHigh = node->left->high + 1;
     if (node->right != NULL) rightHigh = node->right->high + 1;
+    // 计算节点高度
     maxHigh = leftHigh > rightHigh ? leftHigh : rightHigh;
+    // 节点高度没变，则整颗树平衡
     if (node->high == maxHigh) return;
     node->high = maxHigh;
     node = balanceNode(tree, node, (int8)(leftHigh - rightHigh));
@@ -422,6 +438,7 @@ static void rebalance(ZMT_tree *tree, Node *node) {
   }
 }
 
+// 搜索一个key
 int zmSearch(ZMT_tree *tree, uint8 *key) {
   Node *node = tree->root;
   int result;
@@ -435,6 +452,7 @@ int zmSearch(ZMT_tree *tree, uint8 *key) {
       if (result > 0)
         node = node->right;
       else {
+        // 二分搜索
         uint16 left = 0, mid, right = node->len - 1;
         while (left <= right) {
           mid = (left + right) >> 1;
@@ -453,9 +471,10 @@ int zmSearch(ZMT_tree *tree, uint8 *key) {
   return False;
 }
 
+// 添加一个key，已存在返回False
 int zmAdd(ZMT_tree *tree, uint8 *key) {
   if (tree->root == NULL) {
-    // init root node
+    // 初始化头节点
     tree->root = malloc(NODE_SIZE);
     tree->root->parent = NULL;
     tree->root->left = NULL;
@@ -754,6 +773,7 @@ int zmCheck(ZMT_tree *tree) {
   uint8 leftHigh, rightHigh;
   int8 fact;
   do {
+    // 先检测节点高度
     leftHigh = 0;
     rightHigh = 0;
     if (node->left != NULL) leftHigh = node->left->high + 1;
@@ -765,6 +785,7 @@ int zmCheck(ZMT_tree *tree) {
 #endif
       return False;
     }
+    // 检测节点是否平衡
     fact = leftHigh - rightHigh;
     if (fact > 1 || fact < -1) {
 #ifdef zmDEBUG
@@ -773,6 +794,7 @@ int zmCheck(ZMT_tree *tree) {
 #endif
       return False;
     }
+    // 检测保存的key是否有序
     while (pos < node->len) {
       if (memcmp(key, node->list + tree->idLen * pos, tree->idLen) >= 0) {
 #ifdef zmDEBUG

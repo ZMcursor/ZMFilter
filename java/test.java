@@ -7,12 +7,17 @@ class test {
     private static long t;
 
     public static void main(String[] args) throws Throwable {
+        // 测试key写入读取速度
         testAdd(10000000);
+        // 多线程测试
         // testMultiThread(10000002, 3);
+        // 测试 Native代码 平衡逻辑正确性
         // testBalance();
+        // 测试序列化和反序列化功能
         // testDump();
     }
 
+    // 让多线程同时开始任务
     private static CyclicBarrier cyclicBarrier;
 
     public static void testMultiThread(int num, int threadCount) throws Throwable {
@@ -43,6 +48,7 @@ class test {
             }).start();
         }
 
+        // 等待所有写入线程完成
         cdlAdd.await();
         t = System.currentTimeMillis() - t;
 
@@ -52,6 +58,7 @@ class test {
 
         System.out.println("searching");
 
+        // 等待所有读取线程完成
         cdlSearch.await();
         t = System.currentTimeMillis() - t;
 
@@ -110,9 +117,14 @@ class test {
             System.out.println("save success");
             System.out.println("size:" + tree.size() + ";nodeCount:" + tree.nodeCount());
             tree.free();
-            tree = ZMFilter.load("赵名.dat");
-            System.out.println("load success");
-            System.out.println("size:" + tree.size() + ";nodeCount:" + tree.nodeCount());
+            try {
+                tree = ZMFilter.load("赵名.dat");
+                System.out.println("load success");
+                System.out.println("size:" + tree.size() + ";nodeCount:" + tree.nodeCount());
+            } catch (Exception e) {
+                System.out.println("load fail");
+                return;
+            }
         } else
             System.out.println("save fail");
         tree.free();
